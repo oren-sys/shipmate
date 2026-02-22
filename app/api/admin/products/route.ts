@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getDb } from "@/lib/firebase";
+import { autoPostProduct } from "@/lib/marketing/facebook-poster";
 
 const db = getDb();
 
@@ -91,6 +92,26 @@ export async function POST(req: NextRequest) {
       }
 
       await batch.commit();
+
+      // Auto-post each product to Facebook (fire-and-forget)
+      for (let i = 0; i < body.products.length; i++) {
+        const product = body.products[i];
+        if (product.status !== "draft") {
+          const prodSlug = generateSlug(product.titleEn || product.titleHe);
+          autoPostProduct({
+            id: created[i],
+            slug: prodSlug,
+            titleHe: product.titleHe,
+            titleEn: product.titleEn,
+            price: product.price,
+            compareAtPrice: product.compareAtPrice,
+            category: product.category,
+            features: product.features,
+            image: product.images?.[0],
+          }).catch((err) => console.error("Facebook auto-post failed:", err));
+        }
+      }
+
       return NextResponse.json({ created, count: created.length });
     }
 
@@ -105,6 +126,21 @@ export async function POST(req: NextRequest) {
       updatedAt: new Date().toISOString(),
       searchTokens: tokenize(body.titleHe, body.titleEn),
     });
+
+    // Auto-post to Facebook (fire-and-forget, don't block response)
+    if (body.status !== "draft") {
+      autoPostProduct({
+        id: ref.id,
+        slug,
+        titleHe: body.titleHe,
+        titleEn: body.titleEn,
+        price: body.price,
+        compareAtPrice: body.compareAtPrice,
+        category: body.category,
+        features: body.features,
+        image: body.images?.[0],
+      }).catch((err) => console.error("Facebook auto-post failed:", err));
+    }
 
     return NextResponse.json({ id: ref.id, slug });
   } catch (error) {

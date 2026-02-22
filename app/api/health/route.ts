@@ -18,6 +18,8 @@
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/firebase";
 
+export const dynamic = "force-dynamic";
+
 interface HealthCheck {
   status: "healthy" | "degraded" | "unhealthy";
   timestamp: string;
@@ -36,7 +38,7 @@ export async function GET() {
     status: "healthy",
     timestamp: new Date().toISOString(),
     uptime: Math.floor((Date.now() - startTime) / 1000),
-    version: process.env.npm_package_version || "1.0.0",
+    version: process.env.APP_VERSION || "1.0.0",
     checks: {
       firestore: { status: "unknown" },
       environment: { status: "unknown" },
