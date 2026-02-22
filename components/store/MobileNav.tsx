@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Grid3X3, Search, ShoppingBag } from "lucide-react";
+import { useCartStore } from "@/lib/cart/cart-store";
 
 const navItems = [
   { href: "/", icon: Home, label: "ראשי" },
@@ -13,6 +14,7 @@ const navItems = [
 
 export default function MobileNav() {
   const pathname = usePathname();
+  const itemCount = useCartStore((s) => s.getItemCount)();
 
   return (
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md
@@ -44,10 +46,10 @@ export default function MobileNav() {
                   strokeWidth={isActive ? 2.5 : 2}
                   className="transition-all duration-300"
                 />
-                {item.badge && (
+                {item.badge && itemCount > 0 && (
                   <span className="absolute -top-1.5 -left-1.5 bg-coral text-white text-[9px]
                                  font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                    0
+                    {itemCount > 9 ? "9+" : itemCount}
                   </span>
                 )}
               </div>

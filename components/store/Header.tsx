@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { Search, ShoppingBag, Menu, X, User } from "lucide-react";
 import ShipMateLogo from "@/components/icons/ShipMateLogo";
+import { useCartStore } from "@/lib/cart/cart-store";
+import CartDrawer from "./CartDrawer";
 
 const NAV_LINKS = [
   { href: "/", label: "ראשי" },
@@ -18,8 +20,11 @@ const NAV_LINKS = [
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
+  const itemCount = useCartStore((s) => s.getItemCount)();
 
   return (
+    <>
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-cream-dark/50">
       {/* Main header row */}
       <div className="max-w-7xl mx-auto px-4">
@@ -68,19 +73,20 @@ export default function Header() {
             >
               <User size={20} className="text-charcoal" />
             </Link>
-            <Link
-              href="/cart"
+            <button
+              onClick={() => setCartOpen(true)}
               className="relative p-2 hover:bg-cream rounded-xl transition-colors group"
               aria-label="סל קניות"
             >
               <ShoppingBag size={20} className="text-charcoal group-hover:text-coral transition-colors" />
               {/* Cart count badge */}
-              <span className="absolute -top-0.5 -left-0.5 bg-coral text-white text-[10px] font-bold
-                             w-[18px] h-[18px] rounded-full flex items-center justify-center
-                             opacity-0 group-hover:opacity-100 transition-opacity">
-                0
-              </span>
-            </Link>
+              {itemCount > 0 && (
+                <span className="absolute -top-0.5 -left-0.5 bg-coral text-white text-[10px] font-bold
+                               w-[18px] h-[18px] rounded-full flex items-center justify-center">
+                  {itemCount > 9 ? "9+" : itemCount}
+                </span>
+              )}
+            </button>
           </div>
         </div>
       </div>
@@ -120,5 +126,9 @@ export default function Header() {
         </div>
       )}
     </header>
+
+      {/* Cart Drawer */}
+      <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} />
+    </>
   );
 }
