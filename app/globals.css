@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    direction: rtl;
+  }
+
+  body {
+    @apply bg-cream text-charcoal;
+  }
+
+  ::selection {
+    @apply bg-coral/20 text-charcoal;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-coral hover:bg-coral-dark text-white font-bold py-3 px-6 rounded-xl
+           transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5
+           active:translate-y-0 active:shadow-md;
+  }
+
+  .btn-secondary {
+    @apply bg-teal hover:bg-teal-dark text-white font-bold py-3 px-6 rounded-xl
+           transition-all duration-200 hover:shadow-lg;
+  }
+
+  .btn-outline {
+    @apply border-2 border-teal text-teal hover:bg-teal hover:text-white
+           font-bold py-3 px-6 rounded-xl transition-all duration-200;
+  }
+
+  .card {
+    @apply bg-white rounded-card shadow-sm hover:shadow-md transition-shadow duration-200;
+  }
+
+  .badge-sale {
+    @apply bg-coral text-white text-xs font-bold px-2 py-1 rounded-full;
+  }
+
+  .badge-hot {
+    @apply bg-accent text-charcoal text-xs font-bold px-2 py-1 rounded-full;
+  }
+
+  .price {
+    @apply text-coral font-bold text-xl font-heebo;
+  }
+
+  .price-compare {
+    @apply text-gray-400 line-through text-sm;
+  }
+}

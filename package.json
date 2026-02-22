@@ -1,0 +1,41 @@
+{
+  "name": "shipmate",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@google-cloud/secret-manager": "^6.1.1",
+    "@google-cloud/storage": "^7.19.0",
+    "@google-cloud/tasks": "^6.2.1",
+    "@google-cloud/translate": "^9.3.0",
+    "clsx": "^2.1.1",
+    "firebase-admin": "^12.7.0",
+    "lucide-react": "^0.575.0",
+    "next": "^14.2.35",
+    "next-auth": "^4.24.13",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "sharp": "^0.33.5",
+    "tailwind-merge": "^3.5.0",
+    "uuid": "^9.0.1",
+    "zod": "^3.25.76",
+    "zustand": "^4.5.7"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@types/uuid": "^10.0.0",
+    "autoprefixer": "^10.4.24",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^14.2.35",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.19",
+    "typescript": "^5.9.3"
+  }
+}
