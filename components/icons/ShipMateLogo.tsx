@@ -1,126 +1,115 @@
 "use client";
 
 interface LogoProps {
-  variant?: "full" | "icon" | "hebrew";
+  variant?: "full" | "icon";
   color?: "coral" | "white" | "teal";
   size?: "sm" | "md" | "lg";
   className?: string;
 }
 
 const sizeMap = {
-  sm: {
-    icon: 26,
-    nameSize: 15,
-    storeSize: 11,
-    hebrewSize: 9,
-    gap: 6,
-    radius: 6,
-  },
-  md: {
-    icon: 34,
-    nameSize: 20,
-    storeSize: 13,
-    hebrewSize: 10,
-    gap: 8,
-    radius: 8,
-  },
-  lg: {
-    icon: 46,
-    nameSize: 28,
-    storeSize: 16,
-    hebrewSize: 12,
-    gap: 10,
-    radius: 10,
-  },
+  sm: { icon: 32, full: 120 },
+  md: { icon: 40, full: 160 },
+  lg: { icon: 56, full: 220 },
 };
 
-interface ColorScheme {
-  iconBg: string;
-  iconBorder: string;
-  iconColor: string;
-  shipColor: string;
-  mateColor: string;
-  dotColor: string;
-  storeColor: string;
-  hebrewColor: string;
+/* ── Smiling Box Icon (SVG) ── */
+function BoxIcon({ size, white = false }: { size: number; white?: boolean }) {
+  const navy = white ? "#FFFFFF" : "#1B5777";
+  const coral = white ? "rgba(255,255,255,0.7)" : "#E87C5B";
+
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 100 100"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      {/* Box body */}
+      <path
+        d="M18 42 L50 28 L82 42 L82 72 L50 86 L18 72 Z"
+        fill="white"
+        stroke={navy}
+        strokeWidth="4.5"
+        strokeLinejoin="round"
+      />
+      {/* Box top face */}
+      <path
+        d="M18 42 L50 28 L82 42 L50 56 Z"
+        fill="white"
+        stroke={navy}
+        strokeWidth="4.5"
+        strokeLinejoin="round"
+      />
+      {/* Box center line */}
+      <line x1="50" y1="56" x2="50" y2="86" stroke={navy} strokeWidth="4" />
+      {/* Top stripes */}
+      <line x1="30" y1="36" x2="62" y2="36" stroke={navy} strokeWidth="3.5" strokeLinecap="round" />
+      <line x1="34" y1="41" x2="66" y2="41" stroke={coral} strokeWidth="3.5" strokeLinecap="round" />
+      <line x1="30" y1="46" x2="62" y2="46" stroke={navy} strokeWidth="3.5" strokeLinecap="round" />
+      {/* Tape/tag on right */}
+      <rect x="72" y="38" width="6" height="14" rx="1" fill={coral} />
+      <path d="M72 52 L75 55 L78 52" fill={coral} />
+      {/* Face - eyes */}
+      <path d="M30 62 Q33 58 36 62" stroke={navy} strokeWidth="2.5" strokeLinecap="round" fill="none" />
+      <path d="M42 62 Q45 58 48 62" stroke={navy} strokeWidth="2.5" strokeLinecap="round" fill="none" />
+      {/* Face - smile */}
+      <path d="M30 68 Q39 76 48 68" stroke={navy} strokeWidth="2.5" strokeLinecap="round" fill="none" />
+      {/* Wave */}
+      <path
+        d="M12 82 Q30 74 50 82 Q70 90 88 82"
+        stroke={coral}
+        strokeWidth="3.5"
+        strokeLinecap="round"
+        fill="none"
+      />
+    </svg>
+  );
 }
 
-const colorMap: Record<string, ColorScheme> = {
-  coral: {
-    iconBg: "linear-gradient(145deg, #FF6B47 0%, #E8503A 100%)",
-    iconBorder: "none",
-    iconColor: "#FFFFFF",
-    shipColor: "#2D2D3A",
-    mateColor: "#FF6B47",
-    dotColor: "#FF6B47",
-    storeColor: "#1A7A6D",
-    hebrewColor: "#8E9196",
-  },
-  white: {
-    iconBg: "rgba(255,255,255,0.12)",
-    iconBorder: "1.5px solid rgba(255,255,255,0.25)",
-    iconColor: "#FFFFFF",
-    shipColor: "#FFFFFF",
-    mateColor: "#FFFFFF",
-    dotColor: "#FF6B47",
-    storeColor: "rgba(255,255,255,0.55)",
-    hebrewColor: "rgba(255,255,255,0.4)",
-  },
-  teal: {
-    iconBg: "linear-gradient(145deg, #1A7A6D 0%, #15695E 100%)",
-    iconBorder: "none",
-    iconColor: "#FFFFFF",
-    shipColor: "#1A7A6D",
-    mateColor: "#1A7A6D",
-    dotColor: "#FF6B47",
-    storeColor: "#FF6B47",
-    hebrewColor: "#8E9196",
-  },
-};
+/* ── Full Logo: Box + "shipmate.store" text ── */
+function FullLogo({ width, white = false }: { width: number; white?: boolean }) {
+  const navy = white ? "#FFFFFF" : "#1B5777";
+  const coral = white ? "rgba(255,255,255,0.7)" : "#E87C5B";
 
-/* ── Icon Mark: Bold "S" in a rounded gradient square ── */
-function IconMark({
-  size,
-  bg,
-  color,
-  border,
-  radius,
-}: {
-  size: number;
-  bg: string;
-  color: string;
-  border: string;
-  radius: number;
-}) {
+  const iconSize = width * 0.35;
+  const fontSize = width * 0.12;
+  const storeSize = fontSize * 0.7;
+
   return (
     <div
-      style={{
-        width: size,
-        height: size,
-        background: bg,
-        borderRadius: radius,
-        border,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        flexShrink: 0,
-        boxShadow: bg.includes("gradient")
-          ? "0 2px 8px rgba(255,107,71,0.25)"
-          : "none",
-      }}
+      className="flex items-center gap-1"
+      style={{ width, gap: width * 0.04 }}
+      dir="ltr"
+      aria-label="ShipMate.store"
     >
-      <span
-        style={{
-          color,
-          fontSize: size * 0.56,
-          fontWeight: 900,
-          fontFamily: "'Nunito', sans-serif",
-          lineHeight: 1,
-          letterSpacing: -0.5,
-        }}
-      >
-        S
-      </span>
+      <BoxIcon size={iconSize} white={white} />
+      <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.1 }}>
+        <span
+          style={{
+            fontFamily: "'Nunito', sans-serif",
+            fontWeight: 800,
+            fontSize,
+            color: navy,
+            letterSpacing: "-0.02em",
+          }}
+        >
+          shipmate
+        </span>
+        <span
+          style={{
+            fontFamily: "'Nunito', sans-serif",
+            fontWeight: 700,
+            fontSize: storeSize,
+            color: coral,
+            letterSpacing: "0.02em",
+            marginTop: 1,
+          }}
+        >
+          .store
+        </span>
+      </div>
     </div>
   );
 }
@@ -133,103 +122,19 @@ export default function ShipMateLogo({
   className = "",
 }: LogoProps) {
   const s = sizeMap[size];
-  const c = colorMap[color];
+  const isWhite = color === "white";
 
-  /* Icon only */
   if (variant === "icon") {
     return (
       <div className={className}>
-        <IconMark
-          size={s.icon}
-          bg={c.iconBg}
-          color={c.iconColor}
-          border={c.iconBorder}
-          radius={s.radius}
-        />
+        <BoxIcon size={s.icon} white={isWhite} />
       </div>
     );
   }
 
-  /* Hebrew only */
-  if (variant === "hebrew") {
-    return (
-      <span
-        className={`font-heebo font-bold ${className}`}
-        style={{ color: c.hebrewColor, fontSize: s.icon * 0.42 }}
-      >
-        שיפמייט סטור
-      </span>
-    );
-  }
-
-  /* Full logo: icon + "ShipMate.store" + Hebrew subtitle */
   return (
-    <div
-      className={`flex items-center ${className}`}
-      style={{ gap: s.gap }}
-      dir="ltr"
-      aria-label="ShipMate.store – שיפמייט סטור"
-    >
-      <IconMark
-        size={s.icon}
-        bg={c.iconBg}
-        color={c.iconColor}
-        border={c.iconBorder}
-        radius={s.radius}
-      />
-
-      <div style={{ display: "flex", flexDirection: "column", lineHeight: 1 }}>
-        {/* Wordmark */}
-        <div
-          style={{
-            fontFamily: "'Nunito', sans-serif",
-            fontWeight: 800,
-            fontSize: s.nameSize,
-            letterSpacing: "-0.02em",
-            display: "flex",
-            alignItems: "baseline",
-          }}
-        >
-          <span style={{ color: c.shipColor }}>Ship</span>
-          <span style={{ color: c.mateColor }}>Mate</span>
-          <span
-            style={{
-              color: c.dotColor,
-              fontSize: s.storeSize,
-              fontWeight: 700,
-              marginLeft: 1,
-              marginRight: 1,
-            }}
-          >
-            .
-          </span>
-          <span
-            style={{
-              color: c.storeColor,
-              fontSize: s.storeSize,
-              fontWeight: 700,
-              letterSpacing: "0.04em",
-              textTransform: "lowercase" as const,
-            }}
-          >
-            store
-          </span>
-        </div>
-
-        {/* Hebrew subtitle */}
-        <span
-          dir="rtl"
-          style={{
-            fontFamily: "'Heebo', sans-serif",
-            fontWeight: 600,
-            fontSize: s.hebrewSize,
-            color: c.hebrewColor,
-            marginTop: 2,
-          }}
-        >
-          שיפמייט סטור
-        </span>
-      </div>
+    <div className={className}>
+      <FullLogo width={s.full} white={isWhite} />
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import ShipMateLogo from "@/components/icons/ShipMateLogo";
 
 interface NavItem {
   href: string;
@@ -27,7 +28,7 @@ export default function AdminSidebar() {
       {/* Logo */}
       <div className="p-6 border-b border-charcoal-light/30">
         <Link href="/admin" className="flex items-center gap-2">
-          <span className="text-2xl">🚀</span>
+          <ShipMateLogo variant="icon" color="white" size="sm" />
           <div>
             <h1 className="font-nunito font-bold text-lg text-white leading-tight">
               ShipMate
