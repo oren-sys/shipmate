@@ -1,0 +1,17 @@
+{
+  "name": "shipmate-price-updater",
+  "version": "1.0.0",
+  "description": "Daily product price updater using USD/ILS exchange rate from Bank of Israel",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@google-cloud/firestore": "^7.3.0",
+    "@google-cloud/functions-framework": "^3.3.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0"
+  }
+}
