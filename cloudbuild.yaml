@@ -13,7 +13,7 @@ steps:
     args:
       - "build"
       - "-t"
-      - "me-west1-docker.pkg.dev/$PROJECT_ID/shipmate/shipmate:$SHORT_SHA"
+      - "me-west1-docker.pkg.dev/$PROJECT_ID/shipmate/shipmate:${SHORT_SHA:-latest}"
       - "-t"
       - "me-west1-docker.pkg.dev/$PROJECT_ID/shipmate/shipmate:latest"
       - "."
@@ -36,7 +36,7 @@ steps:
       - "deploy"
       - "shipmate"
       - "--image"
-      - "me-west1-docker.pkg.dev/$PROJECT_ID/shipmate/shipmate:$SHORT_SHA"
+      - "me-west1-docker.pkg.dev/$PROJECT_ID/shipmate/shipmate:latest"
       - "--region"
       - "me-west1"
       - "--platform"
@@ -46,7 +46,6 @@ steps:
 
 # Build images
 images:
-  - "me-west1-docker.pkg.dev/$PROJECT_ID/shipmate/shipmate:$SHORT_SHA"
   - "me-west1-docker.pkg.dev/$PROJECT_ID/shipmate/shipmate:latest"
 
 # Build options
@@ -56,7 +55,3 @@ options:
 
 # Timeout for the entire build
 timeout: "1200s"
-
-# Substitutions
-substitutions:
-  _REGION: "me-west1"
