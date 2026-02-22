@@ -1,0 +1,131 @@
+# ============================================
+# Cloud Run Service Configuration
+# ============================================
+# ShipMate - Israeli Dropshipping Platform
+# Region: me-west1 (Tel Aviv)
+# ============================================
+
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: shipmate
+  labels:
+    cloud.googleapis.com/location: me-west1
+  annotations:
+    run.googleapis.com/description: "ShipMate - Israeli dropshipping platform"
+    run.googleapis.com/ingress: all
+spec:
+  template:
+    metadata:
+      annotations:
+        # Auto-scaling: 0 to 10 instances (free tier friendly)
+        autoscaling.knative.dev/minScale: "0"
+        autoscaling.knative.dev/maxScale: "10"
+        # Max concurrent requests per instance
+        autoscaling.knative.dev/target: "80"
+        # CPU allocation: only during requests (cost saving)
+        run.googleapis.com/cpu-throttling: "true"
+        # Startup CPU boost for faster cold starts
+        run.googleapis.com/startup-cpu-boost: "true"
+    spec:
+      # Request timeout
+      timeoutSeconds: 300
+      # Max concurrent requests
+      containerConcurrency: 80
+      containers:
+        - image: me-west1-docker.pkg.dev/dropship-488214/shipmate/shipmate:latest
+          ports:
+            - containerPort: 8080
+          resources:
+            limits:
+              memory: "512Mi"
+              cpu: "1"
+          env:
+            # App config
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "8080"
+            - name: NEXT_PUBLIC_BASE_URL
+              value: "https://shipmate.store"
+
+            # GCP
+            - name: GOOGLE_CLOUD_PROJECT
+              value: "dropship-488214"
+            - name: GCS_PRODUCTS_BUCKET
+              value: "dropship-488214-products"
+            - name: GCS_INVOICES_BUCKET
+              value: "dropship-488214-invoices"
+
+            # Secrets from Secret Manager
+            - name: NEXTAUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: nextauth-secret
+                  key: latest
+            - name: MESHULAM_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: meshulam-api-key
+                  key: latest
+            - name: MESHULAM_PAGE_CODE
+              valueFrom:
+                secretKeyRef:
+                  name: meshulam-page-code
+                  key: latest
+            - name: WHATSAPP_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: whatsapp-api-token
+                  key: latest
+            - name: WHATSAPP_PHONE_ID
+              valueFrom:
+                secretKeyRef:
+                  name: whatsapp-phone-id
+                  key: latest
+            - name: ALIEXPRESS_APP_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: aliexpress-app-key
+                  key: latest
+            - name: ALIEXPRESS_APP_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: aliexpress-app-secret
+                  key: latest
+            - name: ADMIN_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: admin-email
+                  key: latest
+            - name: ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: admin-password
+                  key: latest
+
+            # Public pixels (not secrets)
+            - name: NEXT_PUBLIC_GA4_ID
+              value: "G-6YQSMHJEKP"
+            - name: NEXT_PUBLIC_META_PIXEL_ID
+              value: ""
+            - name: NEXT_PUBLIC_TIKTOK_PIXEL_ID
+              value: ""
+
+          # Startup probe
+          startupProbe:
+            httpGet:
+              path: /api/health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 10
+
+          # Liveness probe
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 30
+            failureThreshold: 3
