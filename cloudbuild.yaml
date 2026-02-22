@@ -13,8 +13,6 @@ steps:
     args:
       - "build"
       - "-t"
-      - "me-west1-docker.pkg.dev/$PROJECT_ID/shipmate/shipmate:${SHORT_SHA:-latest}"
-      - "-t"
       - "me-west1-docker.pkg.dev/$PROJECT_ID/shipmate/shipmate:latest"
       - "."
 
