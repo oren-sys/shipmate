@@ -6,6 +6,7 @@ import CategoryGrid from "@/components/store/CategoryGrid";
 import ReviewCarousel from "@/components/store/ReviewCarousel";
 import NewsletterSignup from "@/components/store/NewsletterSignup";
 import type { ProductCardProps } from "@/components/store/ProductCard";
+import { getDb } from "@/lib/firebase";
 
 export const metadata: Metadata = {
   title: "ShipMate | שיפמייט - החבר שלך לקניות חכמות",
@@ -17,55 +18,100 @@ export const metadata: Metadata = {
   },
 };
 
-// Revalidate every hour (ISR)
-export const revalidate = 3600;
+// Revalidate every 10 minutes (ISR)
+export const revalidate = 600;
 
-// Placeholder products — replaced by Firestore data when connected
-const placeholderProducts: ProductCardProps[] = [
-  { id: "1", slug: "wireless-earbuds", titleHe: "אוזניות אלחוטיות בלוטוס TWS", price: 89.9, compareAtPrice: 149.9, image: "", avgRating: 4.5, reviewCount: 128, badge: "hot" },
-  { id: "2", slug: "smart-watch", titleHe: "שעון חכם ספורט עמיד במים", price: 129.9, compareAtPrice: 199.9, image: "", avgRating: 4.3, reviewCount: 85, badge: "sale" },
-  { id: "3", slug: "led-strip", titleHe: "פס לד RGB שלט רחוק 5 מטר", price: 49.9, compareAtPrice: 89.9, image: "", avgRating: 4.7, reviewCount: 203, badge: "sale" },
-  { id: "4", slug: "phone-holder", titleHe: "מעמד טלפון מגנטי לרכב", price: 34.9, compareAtPrice: 59.9, image: "", avgRating: 4.2, reviewCount: 67, badge: null },
-  { id: "5", slug: "portable-blender", titleHe: "בלנדר נייד USB נטען", price: 69.9, compareAtPrice: 119.9, image: "", avgRating: 4.6, reviewCount: 154, badge: "hot" },
-  { id: "6", slug: "ring-light", titleHe: "טבעת תאורה LED לסלפי וסטרימינג", price: 59.9, compareAtPrice: 99.9, image: "", avgRating: 4.4, reviewCount: 92, badge: "new" },
-  { id: "7", slug: "wireless-charger", titleHe: "מטען אלחוטי מהיר 15W", price: 44.9, compareAtPrice: 79.9, image: "", avgRating: 4.1, reviewCount: 45, badge: null },
-  { id: "8", slug: "mini-projector", titleHe: "מקרן מיני נייד HD", price: 199.9, compareAtPrice: 349.9, image: "", avgRating: 4.8, reviewCount: 38, badge: "sale" },
-];
+async function getActiveProducts(sortBy: string, limit: number): Promise<ProductCardProps[]> {
+  try {
+    const db = getDb();
+    const snap = await db
+      .collection("products")
+      .where("status", "==", "ACTIVE")
+      .orderBy(sortBy, "desc")
+      .limit(limit)
+      .get();
+
+    if (snap.empty) return [];
+
+    return snap.docs.map((doc) => {
+      const d = doc.data();
+      return {
+        id: doc.id,
+        slug: d.slug || doc.id,
+        titleHe: d.titleHe || d.titleEn || "מוצר",
+        price: d.price || 0,
+        compareAtPrice: d.compareAtPrice || undefined,
+        image: d.images?.[0] || "",
+        avgRating: d.avgRating || 0,
+        reviewCount: d.reviewCount || 0,
+        badge: d.trendScore > 50 ? "hot" : d.compareAtPrice ? "sale" : null,
+      };
+    });
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    return [];
+  }
+}
 
 export default async function HomePage() {
-  // TODO: Fetch from Firestore when connected
-  // const { products: hotProducts } = await listProducts({ status: "ACTIVE", sortBy: "trendScore", limit: 4 });
-  // const { products: bestSellers } = await listProducts({ status: "ACTIVE", sortBy: "salesCount", limit: 4 });
-  // const { products: newArrivals } = await listProducts({ status: "ACTIVE", sortBy: "createdAt", limit: 4 });
+  // Fetch real products from Firestore
+  const [hotProducts, bestSellers, newArrivals] = await Promise.all([
+    getActiveProducts("createdAt", 4),
+    getActiveProducts("createdAt", 4),
+    getActiveProducts("createdAt", 8),
+  ]);
 
-  const hotProducts = placeholderProducts.slice(0, 4);
-  const bestSellers = placeholderProducts.slice(2, 6);
-  const newArrivals = placeholderProducts.slice(4, 8);
+  // Use different slices of newArrivals if we don't have enough distinct products
+  const displayHot = hotProducts.length > 0 ? hotProducts : [];
+  const displayBest = bestSellers.length > 0 ? bestSellers : [];
+  const displayNew = newArrivals.length > 4 ? newArrivals.slice(4) : newArrivals;
+
+  const hasProducts = displayHot.length > 0 || displayBest.length > 0 || displayNew.length > 0;
 
   return (
     <>
       <HeroBanner />
       <TrustBar />
-      <ProductGrid
-        title="🔥 מוצרים חמים"
-        products={hotProducts}
-        showViewAll
-        viewAllHref="/category/trending"
-      />
-      <CategoryGrid />
-      <ProductGrid
-        title="⭐ הכי נמכרים"
-        products={bestSellers}
-        showViewAll
-        viewAllHref="/category/best-sellers"
-      />
-      <ReviewCarousel />
-      <ProductGrid
-        title="🆕 הגיעו לאחרונה"
-        products={newArrivals}
-        showViewAll
-        viewAllHref="/category/new-arrivals"
-      />
+      {hasProducts ? (
+        <>
+          {displayHot.length > 0 && (
+            <ProductGrid
+              title="🔥 מוצרים חמים"
+              products={displayHot}
+              showViewAll
+              viewAllHref="/category/trending"
+            />
+          )}
+          <CategoryGrid />
+          {displayBest.length > 0 && (
+            <ProductGrid
+              title="⭐ הכי נמכרים"
+              products={displayBest}
+              showViewAll
+              viewAllHref="/category/best-sellers"
+            />
+          )}
+          <ReviewCarousel />
+          {displayNew.length > 0 && (
+            <ProductGrid
+              title="🆕 הגיעו לאחרונה"
+              products={displayNew}
+              showViewAll
+              viewAllHref="/category/new-arrivals"
+            />
+          )}
+        </>
+      ) : (
+        <>
+          <CategoryGrid />
+          <div className="max-w-7xl mx-auto px-4 py-16 text-center">
+            <div className="text-6xl mb-4">🛍️</div>
+            <h2 className="text-2xl font-bold text-charcoal mb-2">מוצרים בדרך!</h2>
+            <p className="text-charcoal-light">אנחנו עובדים על הוספת מוצרים מדהימים. חזרו בקרוב!</p>
+          </div>
+          <ReviewCarousel />
+        </>
+      )}
       <NewsletterSignup />
     </>
   );

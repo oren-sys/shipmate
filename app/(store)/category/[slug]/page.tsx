@@ -3,6 +3,7 @@ import ProductCard, { ProductCardProps } from "@/components/store/ProductCard";
 import ProductFilters from "@/components/store/ProductFilters";
 import { ChevronLeft, Home } from "lucide-react";
 import Link from "next/link";
+import { getDb } from "@/lib/firebase";
 
 interface CategoryPageProps {
   params: { slug: string };
@@ -19,7 +20,13 @@ const categoryNames: Record<string, string> = {
   trending: "מוצרים חמים",
   "best-sellers": "הכי נמכרים",
   "new-arrivals": "הגיעו לאחרונה",
+  sports: "ספורט",
+  auto: "רכב",
+  jewelry: "תכשיטים",
+  toys: "צעצועים",
 };
+
+export const revalidate = 600;
 
 export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
   const name = categoryNames[params.slug] || params.slug;
@@ -29,22 +36,49 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
   };
 }
 
-// Placeholder products
-const placeholderProducts: ProductCardProps[] = [
-  { id: "1", slug: "wireless-earbuds", titleHe: "אוזניות אלחוטיות בלוטוס TWS", price: 89.9, compareAtPrice: 149.9, image: "", avgRating: 4.5, reviewCount: 128, badge: "hot" },
-  { id: "2", slug: "smart-watch", titleHe: "שעון חכם ספורט עמיד במים", price: 129.9, compareAtPrice: 199.9, image: "", avgRating: 4.3, reviewCount: 85, badge: "sale" },
-  { id: "3", slug: "led-strip", titleHe: "פס לד RGB שלט רחוק 5 מטר", price: 49.9, compareAtPrice: 89.9, image: "", avgRating: 4.7, reviewCount: 203, badge: "sale" },
-  { id: "4", slug: "phone-holder", titleHe: "מעמד טלפון מגנטי לרכב", price: 34.9, compareAtPrice: 59.9, image: "", avgRating: 4.2, reviewCount: 67, badge: null },
-  { id: "5", slug: "portable-blender", titleHe: "בלנדר נייד USB נטען", price: 69.9, compareAtPrice: 119.9, image: "", avgRating: 4.6, reviewCount: 154, badge: "hot" },
-  { id: "6", slug: "ring-light", titleHe: "טבעת תאורה LED לסלפי", price: 59.9, compareAtPrice: 99.9, image: "", avgRating: 4.4, reviewCount: 92, badge: "new" },
-];
+async function getCategoryProducts(slug: string): Promise<ProductCardProps[]> {
+  try {
+    const db = getDb();
+    let query = db
+      .collection("products")
+      .where("status", "==", "ACTIVE");
+
+    // Special categories
+    if (slug === "trending" || slug === "best-sellers") {
+      query = query.orderBy("createdAt", "desc").limit(20);
+    } else if (slug === "new-arrivals") {
+      query = query.orderBy("createdAt", "desc").limit(20);
+    } else {
+      // Filter by category slug
+      query = query.where("category", "==", slug).orderBy("createdAt", "desc").limit(20);
+    }
+
+    const snap = await query.get();
+    if (snap.empty) return [];
+
+    return snap.docs.map((doc) => {
+      const d = doc.data();
+      return {
+        id: doc.id,
+        slug: d.slug || doc.id,
+        titleHe: d.titleHe || d.titleEn || "מוצר",
+        price: d.price || 0,
+        compareAtPrice: d.compareAtPrice || undefined,
+        image: d.images?.[0] || "",
+        avgRating: d.avgRating || 0,
+        reviewCount: d.reviewCount || 0,
+        badge: d.compareAtPrice ? "sale" : null,
+      };
+    });
+  } catch (error) {
+    console.error("Error fetching category products:", error);
+    return [];
+  }
+}
 
 export default async function CategoryPage({ params }: CategoryPageProps) {
   const categoryName = categoryNames[params.slug] || params.slug;
-
-  // TODO: Fetch from Firestore
-  // const { products } = await listProducts({ status: "ACTIVE", categoryId: params.slug, limit: 20 });
-  const products = placeholderProducts;
+  const products = await getCategoryProducts(params.slug);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
@@ -62,22 +96,28 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
       <h1 className="text-3xl font-bold text-charcoal mb-2">{categoryName}</h1>
       <p className="text-charcoal-light mb-6">{products.length} מוצרים</p>
 
-      {/* Filters */}
-      <ProductFilters />
+      {products.length > 0 ? (
+        <>
+          {/* Filters */}
+          <ProductFilters />
 
-      {/* Product grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-6">
-        {products.map((product) => (
-          <ProductCard key={product.id} {...product} />
-        ))}
-      </div>
-
-      {/* Load more */}
-      <div className="text-center mt-8">
-        <button className="btn-outline text-sm">
-          הצג עוד מוצרים
-        </button>
-      </div>
+          {/* Product grid */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-6">
+            {products.map((product) => (
+              <ProductCard key={product.id} {...product} />
+            ))}
+          </div>
+        </>
+      ) : (
+        <div className="text-center py-16">
+          <div className="text-5xl mb-4">📭</div>
+          <h3 className="text-lg font-bold text-charcoal mb-2">אין מוצרים בקטגוריה זו עדיין</h3>
+          <p className="text-charcoal-light mb-6">מוצרים חדשים מתווספים כל הזמן. חזרו בקרוב!</p>
+          <Link href="/" className="text-coral hover:text-coral-dark font-medium">
+            חזרה לדף הבית →
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

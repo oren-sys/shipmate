@@ -5,55 +5,80 @@ import ImageGallery from "@/components/store/ImageGallery";
 import ShareButtons from "@/components/store/ShareButtons";
 import ReviewSection from "@/components/store/ReviewSection";
 import AddToCartButton from "./AddToCartButton";
+import { notFound } from "next/navigation";
+import { getDb } from "@/lib/firebase";
 
 interface ProductPageProps {
   params: { slug: string };
 }
 
-export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
-  // TODO: Fetch from Firestore
-  return {
-    title: `מוצר | ShipMate שיפמייט`,
-    description: "מוצר באיכות גבוהה במחיר מדהים. משלוח לכל הארץ.",
-  };
+export const revalidate = 600;
+
+async function getProductBySlug(slug: string) {
+  try {
+    const db = getDb();
+
+    // Try to find by slug
+    let snap = await db
+      .collection("products")
+      .where("slug", "==", slug)
+      .where("status", "==", "ACTIVE")
+      .limit(1)
+      .get();
+
+    // If not found by slug, try by ID
+    if (snap.empty) {
+      const doc = await db.collection("products").doc(slug).get();
+      if (doc.exists && doc.data()?.status === "ACTIVE") {
+        const d = doc.data()!;
+        return { id: doc.id, ...d };
+      }
+      return null;
+    }
+
+    const doc = snap.docs[0];
+    return { id: doc.id, ...doc.data() };
+  } catch (error) {
+    console.error("Error fetching product:", error);
+    return null;
+  }
 }
 
-// Placeholder product data
-function getPlaceholderProduct(slug: string) {
+export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
+  const product = await getProductBySlug(params.slug);
+  if (!product) {
+    return { title: "מוצר לא נמצא | ShipMate" };
+  }
   return {
-    id: "1",
-    slug,
-    title: "Wireless Bluetooth Earbuds TWS",
-    titleHe: "אוזניות אלחוטיות בלוטוס TWS עם ביטול רעשים",
-    description: "High quality wireless earbuds with active noise cancellation",
-    descriptionHe: `אוזניות אלחוטיות TWS באיכות פרימיום עם ביטול רעשים אקטיבי.
-
-תכונות עיקריות:
-• ביטול רעשים אקטיבי (ANC) לחוויית שמיעה מושלמת
-• בלוטוס 5.3 לחיבור יציב ומהיר
-• סוללה ל-8 שעות + קייס טעינה ל-32 שעות נוספות
-• עמידות במים IPX5
-• מיקרופון מובנה לשיחות צלולות
-• נוח במיוחד לשימוש ממושך`,
-    price: 89.9,
-    compareAtPrice: 149.9,
-    images: [],
-    categoryNameHe: "אלקטרוניקה",
-    categorySlug: "electronics",
-    shippingDays: 14,
-    avgRating: 4.5,
-    reviewCount: 128,
-    salesCount: 342,
+    title: `${(product as any).titleHe || (product as any).titleEn} | ShipMate שיפמייט`,
+    description: (product as any).descriptionHe || (product as any).descriptionEn || "מוצר באיכות גבוהה במחיר מדהים.",
   };
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
-  // TODO: const product = await getProductBySlug(params.slug);
-  const product = getPlaceholderProduct(params.slug);
+  const raw = await getProductBySlug(params.slug);
+  if (!raw) notFound();
 
-  const discount = Math.round(
-    ((product.compareAtPrice - product.price) / product.compareAtPrice) * 100
-  );
+  const product = {
+    id: (raw as any).id,
+    slug: (raw as any).slug || params.slug,
+    titleHe: (raw as any).titleHe || (raw as any).titleEn || "מוצר",
+    titleEn: (raw as any).titleEn || "",
+    descriptionHe: (raw as any).descriptionHe || (raw as any).descriptionEn || "",
+    price: (raw as any).price || 0,
+    compareAtPrice: (raw as any).compareAtPrice || (raw as any).price * 1.3 || 0,
+    images: (raw as any).images || [],
+    categoryNameHe: (raw as any).categoryNameHe || (raw as any).category || "",
+    categorySlug: (raw as any).categoryId || (raw as any).category || "",
+    shippingDays: (raw as any).shippingDays || 14,
+    avgRating: (raw as any).avgRating || 0,
+    reviewCount: (raw as any).reviewCount || 0,
+    salesCount: (raw as any).salesCount || 0,
+  };
+
+  const discount = product.compareAtPrice > product.price
+    ? Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)
+    : 0;
   const installments = (product.price / 3).toFixed(0);
 
   return (
@@ -64,10 +89,14 @@ export default async function ProductPage({ params }: ProductPageProps) {
           <Home size={14} />
           ראשי
         </Link>
-        <ChevronLeft size={14} />
-        <Link href={`/category/${product.categorySlug}`} className="hover:text-coral transition-colors">
-          {product.categoryNameHe}
-        </Link>
+        {product.categorySlug && (
+          <>
+            <ChevronLeft size={14} />
+            <Link href={`/category/${product.categorySlug}`} className="hover:text-coral transition-colors">
+              {product.categoryNameHe || product.categorySlug}
+            </Link>
+          </>
+        )}
         <ChevronLeft size={14} />
         <span className="text-charcoal font-medium line-clamp-1">{product.titleHe}</span>
       </nav>
@@ -88,9 +117,15 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
             {/* Rating + sales */}
             <div className="flex items-center gap-3 mt-2 text-sm text-charcoal-light">
-              <span>⭐ {product.avgRating} ({product.reviewCount} ביקורות)</span>
-              <span className="w-1 h-1 bg-charcoal-light/40 rounded-full" />
-              <span>🛒 {product.salesCount} נמכרו</span>
+              {product.avgRating > 0 && (
+                <span>⭐ {product.avgRating} ({product.reviewCount} ביקורות)</span>
+              )}
+              {product.salesCount > 0 && (
+                <>
+                  <span className="w-1 h-1 bg-charcoal-light/40 rounded-full" />
+                  <span>🛒 {product.salesCount} נמכרו</span>
+                </>
+              )}
             </div>
           </div>
 
@@ -98,8 +133,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
           <div className="bg-cream rounded-2xl p-4 space-y-2">
             <div className="flex items-baseline gap-3">
               <span className="text-3xl font-extrabold text-coral">₪{product.price.toFixed(0)}</span>
-              <span className="text-lg text-gray-400 line-through">₪{product.compareAtPrice.toFixed(0)}</span>
-              <span className="badge-sale">חיסכון {discount}%</span>
+              {discount > 0 && (
+                <>
+                  <span className="text-lg text-gray-400 line-through">₪{product.compareAtPrice.toFixed(0)}</span>
+                  <span className="badge-sale">חיסכון {discount}%</span>
+                </>
+              )}
             </div>
             <div className="flex items-center gap-2 text-sm text-charcoal-light">
               <CreditCard size={14} />
@@ -144,12 +183,14 @@ export default async function ProductPage({ params }: ProductPageProps) {
           </div>
 
           {/* Description */}
-          <div className="border-t border-cream-dark/30 pt-5">
-            <h2 className="font-bold text-lg mb-3">תיאור המוצר</h2>
-            <div className="text-sm text-charcoal leading-relaxed whitespace-pre-line">
-              {product.descriptionHe}
+          {product.descriptionHe && (
+            <div className="border-t border-cream-dark/30 pt-5">
+              <h2 className="font-bold text-lg mb-3">תיאור המוצר</h2>
+              <div className="text-sm text-charcoal leading-relaxed whitespace-pre-line">
+                {product.descriptionHe}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 

@@ -44,6 +44,7 @@ export default function ScanProductsPage() {
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<{ success: number; failed: number } | null>(null);
   const [error, setError] = useState("");
+  const [dataSource, setDataSource] = useState<string>("");
 
   // Fetch categories on mount
   useEffect(() => {
@@ -101,6 +102,7 @@ export default function ScanProductsPage() {
         if (!res.ok) throw new Error("Scan failed");
 
         const data = await res.json();
+        if (data.source) setDataSource(data.source);
         const categoryProducts = (data.products || []).map((p: Omit<ScannedProduct, "selected">) => ({
           ...p,
           category: catId,
@@ -383,6 +385,14 @@ export default function ScanProductsPage() {
       {/* Results */}
       {products.length > 0 && !scanning && (
         <>
+          {/* Source indicator */}
+          {dataSource === "fallback" && (
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-700 text-sm flex items-center gap-2">
+              <span>⚠️</span>
+              <span>AliExpress API לא זמין כרגע — מוצגים מוצרים לדוגמה לפי קטגוריה. אפשר לייבא אותם או לנסות שוב מאוחר יותר.</span>
+            </div>
+          )}
+
           {/* Results header */}
           <div className="flex items-center justify-between bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
             <div className="flex items-center gap-4">
