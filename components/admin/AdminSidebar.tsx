@@ -11,6 +11,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { href: "/admin", label: "דשבורד", icon: "📊" },
+  { href: "/admin/products/scan", label: "סריקת מוצרים", icon: "🔍" },
   { href: "/admin/products", label: "מוצרים", icon: "📦" },
   { href: "/admin/orders", label: "הזמנות", icon: "🛒" },
   { href: "/admin/customers", label: "לקוחות", icon: "👥" },
