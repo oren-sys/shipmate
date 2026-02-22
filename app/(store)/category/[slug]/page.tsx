@@ -26,7 +26,8 @@ const categoryNames: Record<string, string> = {
   toys: "צעצועים",
 };
 
-export const revalidate = 600;
+// Always render dynamically (Firestore not available at build time)
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
   const name = categoryNames[params.slug] || params.slug;

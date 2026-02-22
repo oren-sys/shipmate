@@ -1,6 +1,9 @@
 import { MetadataRoute } from "next";
 import { getDb } from "@/lib/firebase";
 
+// Always render dynamically (Firestore not available at build time)
+export const dynamic = "force-dynamic";
+
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://shipmate.store";
 
 /**

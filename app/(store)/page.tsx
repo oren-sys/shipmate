@@ -18,8 +18,8 @@ export const metadata: Metadata = {
   },
 };
 
-// Revalidate every 10 minutes (ISR)
-export const revalidate = 600;
+// Always render dynamically (Firestore not available at build time)
+export const dynamic = "force-dynamic";
 
 async function getActiveProducts(sortBy: string, limit: number): Promise<ProductCardProps[]> {
   try {

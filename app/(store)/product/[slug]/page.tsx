@@ -12,7 +12,8 @@ interface ProductPageProps {
   params: { slug: string };
 }
 
-export const revalidate = 600;
+// Always render dynamically (Firestore not available at build time)
+export const dynamic = "force-dynamic";
 
 async function getProductBySlug(slug: string) {
   try {
