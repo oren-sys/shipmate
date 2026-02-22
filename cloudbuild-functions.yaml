@@ -1,0 +1,102 @@
+# ============================================
+# Cloud Build - ShipMate Cloud Functions
+# ============================================
+# Deploys all Cloud Functions to me-west1
+# Run manually or via deploy.sh
+# ============================================
+
+steps:
+  # Function 1: Meta CAPI (server-side analytics)
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    id: "deploy-meta-capi"
+    entrypoint: "bash"
+    args:
+      - "-c"
+      - |
+        cd functions/meta-capi
+        npm install --production 2>/dev/null || true
+        npx tsc 2>/dev/null || true
+        gcloud functions deploy meta-capi \
+          --gen2 \
+          --runtime nodejs20 \
+          --trigger-http \
+          --allow-unauthenticated \
+          --region me-west1 \
+          --memory 256MB \
+          --timeout 30s \
+          --set-env-vars "GOOGLE_CLOUD_PROJECT=$PROJECT_ID" \
+          --set-secrets "META_PIXEL_ID=meta-pixel-id:latest,META_ACCESS_TOKEN=meta-access-token:latest" \
+          --source .
+
+  # Function 2: Cart Recovery
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    id: "deploy-cart-recovery"
+    entrypoint: "bash"
+    args:
+      - "-c"
+      - |
+        cd functions/cart-recovery
+        npm install --production 2>/dev/null || true
+        npx tsc 2>/dev/null || true
+        gcloud functions deploy cart-recovery \
+          --gen2 \
+          --runtime nodejs20 \
+          --trigger-http \
+          --allow-unauthenticated \
+          --region me-west1 \
+          --memory 256MB \
+          --timeout 60s \
+          --set-env-vars "GOOGLE_CLOUD_PROJECT=$PROJECT_ID,BASE_URL=https://shipmate.store" \
+          --set-secrets "WHATSAPP_API_TOKEN=whatsapp-api-token:latest,WHATSAPP_PHONE_ID=whatsapp-phone-id:latest" \
+          --source .
+    waitFor: ["-"]
+
+  # Function 3: Scheduler Dispatcher
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    id: "deploy-scheduler-dispatcher"
+    entrypoint: "bash"
+    args:
+      - "-c"
+      - |
+        cd functions/scheduler-dispatcher
+        npm install --production 2>/dev/null || true
+        npx tsc 2>/dev/null || true
+        gcloud functions deploy scheduler-dispatcher \
+          --gen2 \
+          --runtime nodejs20 \
+          --trigger-http \
+          --allow-unauthenticated \
+          --region me-west1 \
+          --memory 256MB \
+          --timeout 120s \
+          --set-env-vars "GOOGLE_CLOUD_PROJECT=$PROJECT_ID,BASE_URL=https://shipmate.store" \
+          --source .
+    waitFor: ["-"]
+
+  # Function 4: Daily Summary
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    id: "deploy-daily-summary"
+    entrypoint: "bash"
+    args:
+      - "-c"
+      - |
+        cd functions/daily-summary
+        npm install --production 2>/dev/null || true
+        npx tsc 2>/dev/null || true
+        gcloud functions deploy daily-summary \
+          --gen2 \
+          --runtime nodejs20 \
+          --trigger-http \
+          --allow-unauthenticated \
+          --region me-west1 \
+          --memory 256MB \
+          --timeout 60s \
+          --set-env-vars "GOOGLE_CLOUD_PROJECT=$PROJECT_ID,BASE_URL=https://shipmate.store" \
+          --set-secrets "ADMIN_EMAIL=admin-email:latest" \
+          --source .
+    waitFor: ["-"]
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: "600s"
