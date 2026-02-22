@@ -1,0 +1,15 @@
+{
+  "name": "meta-capi",
+  "version": "1.0.0",
+  "description": "Meta Conversions API server-side event tracking",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "deploy": "gcloud functions deploy meta-capi --runtime nodejs20 --trigger-http --allow-unauthenticated --region me-west1 --memory 256MB --timeout 30s --set-env-vars META_PIXEL_ID=$META_PIXEL_ID,META_ACCESS_TOKEN=$META_ACCESS_TOKEN"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "@types/node": "^20.0.0"
+  }
+}
