@@ -14,7 +14,7 @@ import { getDb } from "@/lib/firebase";
  * Body: { urls: string[], autoTranslate: boolean }
  */
 
-const AE_APP_KEY = process.env.ALIEXPRESS_APP_KEY || "528274";
+const AE_APP_KEY = process.env.ALIEXPRESS_APP_KEY || "";
 const AE_APP_SECRET = process.env.ALIEXPRESS_APP_SECRET || "";
 const AE_API_BASE = "https://api-sg.aliexpress.com/sync";
 

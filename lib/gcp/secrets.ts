@@ -13,7 +13,7 @@ export async function getSecret(name: string): Promise<string> {
 export async function loadAllSecrets(): Promise<Record<string, string>> {
   const secretNames = [
     "MESHULAM_API_KEY", "MESHULAM_PAGE_CODE",
-    "ALIEXPRESS_API_KEY", "ALIEXPRESS_API_SECRET",
+    "ALIEXPRESS_APP_KEY", "ALIEXPRESS_APP_SECRET",
     "WHATSAPP_API_TOKEN", "WHATSAPP_PHONE_ID",
     "META_PIXEL_ID", "TIKTOK_PIXEL_ID", "GOOGLE_ANALYTICS_ID",
     "NEXTAUTH_SECRET", "ADMIN_EMAIL", "ADMIN_PASSWORD",

@@ -110,8 +110,8 @@ async function scrapeProduct(url: string): Promise<AliExpressProduct | null> {
   if (!productId) return null;
 
   // Try AliExpress API first
-  const apiKey = process.env.ALIEXPRESS_API_KEY;
-  const apiSecret = process.env.ALIEXPRESS_API_SECRET;
+  const apiKey = process.env.ALIEXPRESS_APP_KEY;
+  const apiSecret = process.env.ALIEXPRESS_APP_SECRET;
 
   if (apiKey && apiKey !== "placeholder") {
     return await fetchViaAPI(productId, apiKey, apiSecret || "");
@@ -196,7 +196,7 @@ async function searchProducts(
   query: string,
   maxResults: number
 ): Promise<AliExpressProduct[]> {
-  const apiKey = process.env.ALIEXPRESS_API_KEY;
+  const apiKey = process.env.ALIEXPRESS_APP_KEY;
   if (!apiKey || apiKey === "placeholder") {
     console.warn("No API key for search");
     return [];
