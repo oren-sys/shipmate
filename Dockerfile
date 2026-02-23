@@ -48,8 +48,9 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=8080
 ENV HOSTNAME="0.0.0.0"
 
-# Copy only necessary files from builder
-COPY --from=builder /app/public ./public
+# Ensure public directory exists and copy necessary files from builder
+RUN mkdir -p ./public
+COPY --from=builder /app/public ./public/
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
