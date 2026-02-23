@@ -19,15 +19,13 @@ export const dynamic = "force-dynamic";
 async function exchangeCodeForToken(code: string) {
   const { createHmac } = await import("crypto");
 
-  const timestamp = new Date()
-    .toISOString()
-    .replace(/[-T:.Z]/g, "")
-    .slice(0, 14);
+  // AliExpress IOP SDK expects milliseconds since epoch
+  const timestamp = String(Date.now());
 
   const apiParams: Record<string, string> = {
     app_key: AE_APP_KEY,
     timestamp,
-    sign_method: "hmac-sha256",
+    sign_method: "sha256",
     code,
   };
 
@@ -46,7 +44,7 @@ async function exchangeCodeForToken(code: string) {
 
   // Call the dedicated auth token endpoint (NOT /sync)
   const response = await fetch(
-    "https://api-sg.aliexpress.com/auth/token/create",
+    "https://api-sg.aliexpress.com/rest/auth/token/create",
     {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -54,13 +52,31 @@ async function exchangeCodeForToken(code: string) {
     }
   );
 
-  const data = await response.json();
+  const text = await response.text();
   console.log(
     "[AliExpress Callback] Token response status:",
     response.status,
-    "keys:",
-    Object.keys(data)
+    "body length:",
+    text.length,
+    "body preview:",
+    text.slice(0, 500)
   );
+
+  if (!text) {
+    throw new Error(
+      `AliExpress returned empty response (HTTP ${response.status})`
+    );
+  }
+
+  let data: Record<string, unknown>;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error(
+      `AliExpress returned non-JSON (HTTP ${response.status}): ${text.slice(0, 200)}`
+    );
+  }
+
   return data;
 }
 
@@ -104,8 +120,10 @@ export default async function CallbackPage({ searchParams }: CallbackPageProps) 
   try {
     tokenResult = await exchangeCodeForToken(code);
 
-    // Check for API error
-    if (tokenResult?.error_response) {
+    // Check for API error (REST format: {type, code, message} or legacy: {error_response})
+    if (tokenResult?.code && tokenResult?.type === "ISV") {
+      tokenError = `${tokenResult.code}: ${tokenResult.message}`;
+    } else if (tokenResult?.error_response) {
       tokenError =
         (tokenResult.error_response as Record<string, string>)?.msg ||
         JSON.stringify(tokenResult.error_response);
