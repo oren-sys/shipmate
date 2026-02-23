@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { AE_CATEGORIES } from "@/lib/aliexpress/categories";
+import { getDb } from "@/lib/firebase";
 
 /**
  * AliExpress Trending Product Scanner API
@@ -17,6 +18,20 @@ import { AE_CATEGORIES } from "@/lib/aliexpress/categories";
 const AE_APP_KEY = process.env.ALIEXPRESS_APP_KEY || "528274";
 const AE_APP_SECRET = process.env.ALIEXPRESS_APP_SECRET || "";
 const AE_API_BASE = "https://api-sg.aliexpress.com/sync";
+
+/* ── Read stored OAuth access token from Firestore ── */
+async function getAccessToken(): Promise<string | null> {
+  try {
+    const db = getDb();
+    const doc = await db.collection("settings").doc("aliexpress").get();
+    if (!doc.exists) return null;
+    const data = doc.data();
+    return data?.accessToken || null;
+  } catch (error) {
+    console.error("[AliExpress] Failed to read access token:", error);
+    return null;
+  }
+}
 
 /* ── Price calculator ── */
 function calculatePrice(costUSD: number, exchangeRate: number = 3.6) {
@@ -71,7 +86,7 @@ async function translateToHebrew(text: string): Promise<string> {
 }
 
 /* ── Fetch hot products from AliExpress API ── */
-async function fetchHotProducts(categoryId: string, count: number, page: number) {
+async function fetchHotProducts(categoryId: string, count: number, page: number, accessToken?: string | null) {
   const timestamp = new Date().toISOString().replace(/[-:T]/g, "").substring(0, 14);
 
   const params = new URLSearchParams({
@@ -88,6 +103,11 @@ async function fetchHotProducts(categoryId: string, count: number, page: number)
     fields:
       "product_id,product_title,product_main_image_url,product_small_image_urls,original_price,sale_price,discount,evaluate_rate,lastest_volume,commission_rate,shop_url",
   });
+
+  // Add access token if available (required for authorized API access)
+  if (accessToken) {
+    params.set("access_token", accessToken);
+  }
 
   const sign = await generateSign(params, AE_APP_SECRET);
   params.set("sign", sign);
@@ -130,11 +150,28 @@ export async function POST(req: NextRequest) {
       ? AE_CATEGORIES[categoryId]?.id || categoryId
       : "";
 
+    // Read stored OAuth access token
+    const accessToken = await getAccessToken();
+    if (!accessToken) {
+      console.warn("[AliExpress Scanner] No access token found in Firestore settings/aliexpress");
+    }
+
     // Fetch from AliExpress
-    const result = await fetchHotProducts(aeCategoryId, count, page);
+    const result = await fetchHotProducts(aeCategoryId, count, page, accessToken);
 
     if (!result || !result.products) {
-      // Return fallback products for development / if API is unreachable
+      // If no token → tell the user to authorize first
+      if (!accessToken) {
+        const fallbackProducts = generateFallbackProducts(count, categoryId);
+        return NextResponse.json({
+          products: fallbackProducts,
+          totalCount: fallbackProducts.length,
+          currentPage: page,
+          source: "no_token",
+          message: "יש לחבר את חשבון AliExpress כדי לטעון מוצרים אמיתיים",
+        });
+      }
+      // Token exists but API still failed → fallback
       const fallbackProducts = generateFallbackProducts(count, categoryId);
       return NextResponse.json({
         products: fallbackProducts,

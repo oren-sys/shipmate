@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { getDb } from "@/lib/firebase";
 
 /**
  * AliExpress Product Import API
@@ -16,6 +17,20 @@ import { authOptions } from "@/lib/auth";
 const AE_APP_KEY = process.env.ALIEXPRESS_APP_KEY || "528274";
 const AE_APP_SECRET = process.env.ALIEXPRESS_APP_SECRET || "";
 const AE_API_BASE = "https://api-sg.aliexpress.com/sync";
+
+/* ── Read stored OAuth access token from Firestore ── */
+async function getAccessToken(): Promise<string | null> {
+  try {
+    const db = getDb();
+    const doc = await db.collection("settings").doc("aliexpress").get();
+    if (!doc.exists) return null;
+    const data = doc.data();
+    return data?.accessToken || null;
+  } catch (error) {
+    console.error("[AliExpress Import] Failed to read access token:", error);
+    return null;
+  }
+}
 
 // Tiered markup pricing
 function calculatePrice(costUSD: number, exchangeRate: number = 3.6) {
@@ -82,7 +97,8 @@ export async function POST(req: NextRequest) {
           continue;
         }
 
-        const productData = await fetchAliExpressProduct(productId);
+        const accessToken = await getAccessToken();
+        const productData = await fetchAliExpressProduct(productId, accessToken);
 
         if (productData) {
           const { price, compareAt } = calculatePrice(productData.costPrice);
@@ -124,7 +140,7 @@ export async function POST(req: NextRequest) {
 /**
  * Fetch product details from AliExpress Affiliate API
  */
-async function fetchAliExpressProduct(productId: string) {
+async function fetchAliExpressProduct(productId: string, accessToken?: string | null) {
   try {
     // Using AliExpress affiliate product detail endpoint
     const timestamp = new Date().toISOString().replace(/[-:T]/g, "").substring(0, 14);
@@ -139,6 +155,11 @@ async function fetchAliExpressProduct(productId: string) {
       target_currency: "USD",
       target_language: "EN",
     });
+
+    // Add access token if available
+    if (accessToken) {
+      params.set("access_token", accessToken);
+    }
 
     // Generate API signature
     const sign = await generateSign(params, AE_APP_SECRET);

@@ -386,6 +386,22 @@ export default function ScanProductsPage() {
       {products.length > 0 && !scanning && (
         <>
           {/* Source indicator */}
+          {dataSource === "no_token" && (
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl text-blue-700 text-sm flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span>🔑</span>
+                <span>חשבון AliExpress לא מחובר — מוצגים מוצרים לדוגמה. חברו את החשבון כדי לטעון מוצרים אמיתיים.</span>
+              </div>
+              <a
+                href="https://api-sg.aliexpress.com/oauth/authorize?response_type=code&force_auth=true&redirect_uri=https://shipmate.store/callback&client_id=528274"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="shrink-0 bg-blue-600 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+              >
+                חבר AliExpress
+              </a>
+            </div>
+          )}
           {dataSource === "fallback" && (
             <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-700 text-sm flex items-center gap-2">
               <span>⚠️</span>
