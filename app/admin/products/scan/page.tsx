@@ -393,7 +393,7 @@ export default function ScanProductsPage() {
                 <span>חשבון AliExpress לא מחובר — מוצגים מוצרים לדוגמה. חברו את החשבון כדי לטעון מוצרים אמיתיים.</span>
               </div>
               <a
-                href="https://api-sg.aliexpress.com/oauth/authorize?response_type=code&force_auth=true&redirect_uri=https://shipmate.store/callback&client_id=528274"
+                href="https://api-sg.aliexpress.com/oauth/authorize?response_type=code&force_auth=true&redirect_uri=https%3A%2F%2Fshipmate.store%2Fcallback&client_id=528274&sp=ae"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="shrink-0 bg-blue-600 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition"
