@@ -50,8 +50,5 @@ images:
 options:
   machineType: "E2_HIGHCPU_8"
 
-# Store build logs in GCS
-logsBucket: "gs://dropship-488214_cloudbuild/logs"
-
 # Timeout for the entire build
 timeout: "1200s"

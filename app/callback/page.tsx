@@ -17,7 +17,6 @@ const AE_APP_SECRET = process.env.ALIEXPRESS_APP_SECRET || "";
 export const dynamic = "force-dynamic";
 
 async function exchangeCodeForToken(code: string) {
-  // Build the token request to AliExpress
   const { createHmac } = await import("crypto");
 
   const timestamp = new Date()
@@ -25,35 +24,43 @@ async function exchangeCodeForToken(code: string) {
     .replace(/[-T:.Z]/g, "")
     .slice(0, 14);
 
-  const params = new URLSearchParams({
+  const apiParams: Record<string, string> = {
     app_key: AE_APP_KEY,
     timestamp,
     sign_method: "hmac-sha256",
     code,
-    method: "taobao.top.auth.token.create",
-  });
+  };
 
-  // Generate HMAC signature
-  const sortedEntries = Array.from(params.entries()).sort(([a], [b]) =>
-    a.localeCompare(b)
-  );
-  const signString = sortedEntries.map(([k, v]) => `${k}${v}`).join("");
+  // Generate HMAC signature — for /auth/token/create, prepend API path
+  const sortedKeys = Object.keys(apiParams).sort();
+  const apiPath = "/auth/token/create";
+  const signString =
+    apiPath + sortedKeys.map((k) => `${k}${apiParams[k]}`).join("");
   const hmac = createHmac("sha256", AE_APP_SECRET);
   hmac.update(signString);
-  const sign = hmac.digest("hex").toUpperCase();
+  apiParams.sign = hmac.digest("hex").toUpperCase();
 
-  params.append("sign", sign);
+  const body = new URLSearchParams(apiParams);
 
-  // Call AliExpress API
+  console.log("[AliExpress Callback] Exchanging code for token...");
+
+  // Call the dedicated auth token endpoint (NOT /sync)
   const response = await fetch(
-    `https://api-sg.aliexpress.com/sync?${params.toString()}`,
+    "https://api-sg.aliexpress.com/auth/token/create",
     {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: body.toString(),
     }
   );
 
   const data = await response.json();
+  console.log(
+    "[AliExpress Callback] Token response status:",
+    response.status,
+    "keys:",
+    Object.keys(data)
+  );
   return data;
 }
 
@@ -98,41 +105,51 @@ export default async function CallbackPage({ searchParams }: CallbackPageProps) 
     tokenResult = await exchangeCodeForToken(code);
 
     // Check for API error
-    if (
-      tokenResult?.error_response ||
-      !tokenResult?.token_result
-    ) {
+    if (tokenResult?.error_response) {
       tokenError =
-        (tokenResult?.error_response as Record<string, string>)?.msg ||
-        JSON.stringify(tokenResult);
+        (tokenResult.error_response as Record<string, string>)?.msg ||
+        JSON.stringify(tokenResult.error_response);
     } else {
-      // Parse the token_result (it comes as a JSON string)
-      const tokenData =
-        typeof tokenResult.token_result === "string"
-          ? JSON.parse(tokenResult.token_result)
-          : tokenResult.token_result;
+      // /auth/token/create returns token data directly OR wrapped in token_result
+      let tokenData: Record<string, unknown>;
+      if (tokenResult?.token_result) {
+        tokenData =
+          typeof tokenResult.token_result === "string"
+            ? JSON.parse(tokenResult.token_result)
+            : (tokenResult.token_result as Record<string, unknown>);
+      } else if (tokenResult?.access_token) {
+        // Direct response format
+        tokenData = tokenResult;
+      } else {
+        tokenError = "Unexpected response: " + JSON.stringify(tokenResult);
+        tokenData = {};
+      }
 
-      // Store token in Firestore
-      const db = getDb();
-      await db
-        .collection("settings")
-        .doc("aliexpress")
-        .set(
-          {
-            accessToken: tokenData.access_token || "",
-            refreshToken: tokenData.refresh_token || "",
-            expiresIn: tokenData.expire_time || tokenData.expires_in || 0,
-            refreshExpiresIn:
-              tokenData.refresh_token_valid_time ||
-              tokenData.refresh_expires_in ||
-              0,
-            userId: tokenData.user_id || "",
-            accountPlatform: tokenData.account_platform || "ae",
-            grantedAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-          { merge: true }
-        );
+      if (!tokenError && tokenData.access_token) {
+        // Store token in Firestore
+        const db = getDb();
+        await db
+          .collection("settings")
+          .doc("aliexpress")
+          .set(
+            {
+              accessToken: (tokenData.access_token as string) || "",
+              refreshToken: (tokenData.refresh_token as string) || "",
+              expiresIn: tokenData.expire_time || tokenData.expires_in || 0,
+              refreshExpiresIn:
+                tokenData.refresh_token_valid_time ||
+                tokenData.refresh_expires_in ||
+                0,
+              userId: (tokenData.user_id as string) || "",
+              accountPlatform:
+                (tokenData.account_platform as string) || "ae",
+              grantedAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            },
+            { merge: true }
+          );
+        console.log("[AliExpress Callback] Token stored in Firestore successfully");
+      }
     }
   } catch (err) {
     tokenError = err instanceof Error ? err.message : "Unknown error";
