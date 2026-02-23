@@ -138,27 +138,30 @@ export async function POST(req: NextRequest) {
 }
 
 /**
- * Fetch product details from AliExpress Affiliate API
+ * Fetch product details from AliExpress Dropshipping API
+ * Uses aliexpress.ds.product.get (requires access_token)
  */
 async function fetchAliExpressProduct(productId: string, accessToken?: string | null) {
   try {
-    // Using AliExpress affiliate product detail endpoint
     const timestamp = new Date().toISOString().replace(/[-:T]/g, "").substring(0, 14);
 
     const params = new URLSearchParams({
       app_key: AE_APP_KEY,
       timestamp,
       sign_method: "hmac-sha256",
-      method: "aliexpress.affiliate.productdetail.get",
-      product_ids: productId,
-      fields: "product_title,product_main_image_url,product_small_image_urls,original_price,sale_price,discount",
+      method: "aliexpress.ds.product.get",
+      product_id: productId,
       target_currency: "USD",
       target_language: "EN",
+      country: "IL",
     });
 
-    // Add access token if available
+    // Access token is required for DS product detail
     if (accessToken) {
       params.set("access_token", accessToken);
+    } else {
+      console.warn("[AliExpress Import] No access token — ds.product.get requires OAuth");
+      return getFallbackProduct(productId);
     }
 
     // Generate API signature
@@ -166,27 +169,53 @@ async function fetchAliExpressProduct(productId: string, accessToken?: string | 
     params.set("sign", sign);
 
     const response = await fetch(`${AE_API_BASE}?${params.toString()}`);
+    const text = await response.text();
 
     if (!response.ok) {
-      // Fallback: return placeholder data for development
+      console.error("[AliExpress Import] HTTP error:", response.status, text.substring(0, 500));
       return getFallbackProduct(productId);
     }
 
-    const data = await response.json();
-    const product = data?.aliexpress_affiliate_productdetail_get_resp?.resp_result?.result?.products?.[0];
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      console.error("[AliExpress Import] Non-JSON response:", text.substring(0, 500));
+      return getFallbackProduct(productId);
+    }
+
+    if (data.error_response) {
+      console.error("[AliExpress Import] API error:", JSON.stringify(data.error_response));
+      return getFallbackProduct(productId);
+    }
+
+    const product = data?.aliexpress_ds_product_get_response?.result;
 
     if (!product) {
       return getFallbackProduct(productId);
     }
 
+    // DS API returns images in a different structure
+    const images: string[] = [];
+    if (product.ae_multimedia_info_dto?.image_urls) {
+      images.push(...product.ae_multimedia_info_dto.image_urls.split(";").filter(Boolean));
+    }
+
+    // Get price from SKU info
+    let costPrice = 10;
+    const skuList = product.ae_item_sku_info_dtos?.ae_item_sku_info_d_t_o;
+    if (skuList && skuList.length > 0) {
+      costPrice = parseFloat(skuList[0].offer_sale_price || skuList[0].sku_price || "10");
+    }
+
     return {
-      titleEn: product.product_title || "AliExpress Product",
-      descriptionEn: product.product_title || "",
-      costPrice: parseFloat(product.sale_price?.amount || product.original_price?.amount || "10"),
-      images: product.product_small_image_urls?.string || [product.product_main_image_url].filter(Boolean),
+      titleEn: product.ae_item_base_info_dto?.subject || "AliExpress Product",
+      descriptionEn: product.ae_item_base_info_dto?.detail || product.ae_item_base_info_dto?.subject || "",
+      costPrice,
+      images,
     };
   } catch (error) {
-    console.error("AliExpress API error:", error);
+    console.error("[AliExpress Import] Error:", error);
     return getFallbackProduct(productId);
   }
 }
