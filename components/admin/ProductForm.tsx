@@ -37,12 +37,16 @@ const defaultProduct: ProductData = {
 };
 
 const categories = [
-  "אלקטרוניקה",
-  "בית וגן",
-  "אופנה",
-  "בריאות ויופי",
-  "ספורט",
-  "צעצועים וילדים",
+  { value: "electronics", label: "אלקטרוניקה" },
+  { value: "fashion", label: "אופנה" },
+  { value: "home", label: "בית וגן" },
+  { value: "beauty", label: "יופי וטיפוח" },
+  { value: "sports", label: "ספורט" },
+  { value: "toys", label: "צעצועים" },
+  { value: "gadgets", label: "גאדג׳טים" },
+  { value: "auto", label: "רכב" },
+  { value: "jewelry", label: "תכשיטים" },
+  { value: "kids", label: "ילדים" },
 ];
 
 // Tiered markup pricing
@@ -261,7 +265,7 @@ export default function ProductForm({ product, onSave, isNew = false }: ProductF
             >
               <option value="">בחר קטגוריה</option>
               {categories.map((c) => (
-                <option key={c} value={c}>{c}</option>
+                <option key={c.value} value={c.value}>{c.label}</option>
               ))}
             </select>
           </div>

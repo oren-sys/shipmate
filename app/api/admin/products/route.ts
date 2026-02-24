@@ -39,6 +39,13 @@ export async function GET(req: NextRequest) {
       ...doc.data(),
     }));
 
+    // Exclude soft-deleted products unless explicitly requesting deleted status
+    if (!status || status === "all") {
+      products = products.filter(
+        (p: Record<string, unknown>) => p.status !== "deleted"
+      );
+    }
+
     // Client-side search filter (for small datasets; use search index for scale)
     if (search) {
       const searchLower = search.toLowerCase();

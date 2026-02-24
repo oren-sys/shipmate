@@ -67,16 +67,22 @@ export default function Footer() {
               במחירים שלא תאמינו, עם משלוח ישירות אלייך.
             </p>
             <div className="flex gap-3 pt-2">
-              {/* Social links — placeholder icons */}
-              {["facebook", "instagram", "tiktok"].map((social) => (
+              {/* Social links */}
+              {[
+                { name: "facebook", href: "https://www.facebook.com/profile.php?id=61575641187310" },
+                { name: "instagram", href: "#" },
+                { name: "tiktok", href: "#" },
+              ].map((social) => (
                 <a
-                  key={social}
-                  href="#"
+                  key={social.name}
+                  href={social.href}
+                  target={social.href !== "#" ? "_blank" : undefined}
+                  rel={social.href !== "#" ? "noopener noreferrer" : undefined}
                   className="w-9 h-9 rounded-xl bg-white/10 hover:bg-coral/30
                            flex items-center justify-center transition-colors duration-200"
-                  aria-label={social}
+                  aria-label={social.name}
                 >
-                  <span className="text-xs font-bold uppercase">{social[0]}</span>
+                  <span className="text-xs font-bold uppercase">{social.name[0]}</span>
                 </a>
               ))}
             </div>
