@@ -7,6 +7,18 @@ const nextConfig = {
         protocol: "https",
         hostname: "storage.googleapis.com",
       },
+      {
+        protocol: "https",
+        hostname: "**.aliexpress-media.com",
+      },
+      {
+        protocol: "https",
+        hostname: "**.aliexpress.com",
+      },
+      {
+        protocol: "https",
+        hostname: "ae-pic-a1.aliexpress-media.com",
+      },
     ],
   },
   experimental: {

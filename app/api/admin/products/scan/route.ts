@@ -46,26 +46,18 @@ async function generateSign(params: URLSearchParams, secret: string): Promise<st
   return hmac.digest("hex").toUpperCase();
 }
 
-/* ── Translate to Hebrew using GCP ── */
+/* ── Translate to Hebrew using @google-cloud/translate ── */
+/* Uses Application Default Credentials on Cloud Run — no API key needed */
 async function translateToHebrew(text: string): Promise<string> {
   try {
-    const url = `https://translation.googleapis.com/language/translate/v2`;
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        q: text,
-        source: "en",
-        target: "he",
-        format: "text",
-        key: process.env.GOOGLE_TRANSLATE_API_KEY || "",
-      }),
+    const { Translate } = await import("@google-cloud/translate").then(m => m.v2);
+    const translate = new Translate({
+      projectId: process.env.GOOGLE_CLOUD_PROJECT || "dropship-488214",
     });
-
-    if (!res.ok) return text;
-    const data = await res.json();
-    return data?.data?.translations?.[0]?.translatedText || text;
-  } catch {
+    const [translation] = await translate.translate(text, "he");
+    return translation || text;
+  } catch (e) {
+    console.warn("[Translate] Failed:", e instanceof Error ? e.message : e);
     return text;
   }
 }
