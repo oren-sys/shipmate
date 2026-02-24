@@ -19,13 +19,6 @@ const platformConfig = {
   whatsapp: { label: "WhatsApp", icon: "💬", color: "bg-emerald-50 text-emerald-700" },
 };
 
-const demoPosts: ContentPost[] = [
-  { id: "v1", platform: "tiktok", caption: "אתם לא מאמינים כמה האוזניות האלה נוחות 🎧 #שיפמייט #אוזניות", hashtags: ["שיפמייט", "אוזניות", "דילים", "טיקטוקישראל"], status: "published", engagement: 1250 },
-  { id: "v2", platform: "instagram", caption: "מנורת LED חכמה שמשנה את הבית ✨ זמין עכשיו בהנחה!", hashtags: ["שיפמייט", "עיצובבית", "מנורה", "חכם"], status: "scheduled", scheduledAt: "2025-02-23T14:00:00" },
-  { id: "v3", platform: "facebook", caption: "🔥 דיל היום: כרית מסאז׳ חשמלית ב-₪229 במקום ₪349! משלוח חינם מעל ₪199", hashtags: ["שיפמייט", "דילים", "מבצעים"], status: "draft" },
-  { id: "v4", platform: "whatsapp", caption: "היי! יש לנו מבצע מטורף השבוע 🎉 15% הנחה על כל האתר עם הקוד WINTER25", hashtags: [], status: "published", engagement: 340 },
-];
-
 const hebrewHashtags = [
   "שיפמייט", "דילים", "מבצעים", "קניותאונליין", "טיקטוקישראל",
   "אלקטרוניקה", "גאדג׳טים", "עיצובבית", "מתנות", "משלוחחינם",
@@ -33,7 +26,7 @@ const hebrewHashtags = [
 ];
 
 export default function ViralContentPage() {
-  const [posts] = useState(demoPosts);
+  const [posts] = useState<ContentPost[]>([]);
   const [generating, setGenerating] = useState(false);
   const [productName, setProductName] = useState("");
   const [targetPlatform, setTargetPlatform] = useState<string>("tiktok");
@@ -143,38 +136,50 @@ export default function ViralContentPage() {
           <h3 className="text-sm font-bold text-charcoal">📅 לוח תוכן</h3>
         </div>
 
-        <div className="divide-y divide-gray-50">
-          {posts.map((post) => {
-            const platform = platformConfig[post.platform];
-            return (
-              <div key={post.id} className="flex items-start gap-4 p-6">
-                <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${platform.color}`}>
-                  {platform.icon} {platform.label}
-                </span>
-                <div className="flex-1">
-                  <p className="text-sm text-charcoal">{post.caption}</p>
-                  {post.hashtags.length > 0 && (
-                    <p className="text-xs text-coral mt-1">
-                      {post.hashtags.map((h) => `#${h}`).join(" ")}
-                    </p>
-                  )}
-                </div>
-                <div className="text-left shrink-0">
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${
-                    post.status === "published" ? "bg-emerald-50 text-emerald-700" :
-                    post.status === "scheduled" ? "bg-blue-50 text-blue-700" :
-                    "bg-gray-100 text-gray-500"
-                  }`}>
-                    {post.status === "published" ? "פורסם" : post.status === "scheduled" ? "מתוזמן" : "טיוטה"}
+        {posts.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 px-4">
+            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+              <svg className="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <p className="text-gray-500 font-medium">אין תוכן עדיין</p>
+            <p className="text-sm text-gray-400 mt-1">צרו תוכן חדש עם מחולל התוכן למעלה</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-50">
+            {posts.map((post) => {
+              const platform = platformConfig[post.platform];
+              return (
+                <div key={post.id} className="flex items-start gap-4 p-6">
+                  <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${platform.color}`}>
+                    {platform.icon} {platform.label}
                   </span>
-                  {post.engagement && (
-                    <p className="text-xs text-gray-400 mt-1">{post.engagement.toLocaleString()} אינטראקציות</p>
-                  )}
+                  <div className="flex-1">
+                    <p className="text-sm text-charcoal">{post.caption}</p>
+                    {post.hashtags.length > 0 && (
+                      <p className="text-xs text-coral mt-1">
+                        {post.hashtags.map((h) => `#${h}`).join(" ")}
+                      </p>
+                    )}
+                  </div>
+                  <div className="text-left shrink-0">
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      post.status === "published" ? "bg-emerald-50 text-emerald-700" :
+                      post.status === "scheduled" ? "bg-blue-50 text-blue-700" :
+                      "bg-gray-100 text-gray-500"
+                    }`}>
+                      {post.status === "published" ? "פורסם" : post.status === "scheduled" ? "מתוזמן" : "טיוטה"}
+                    </span>
+                    {post.engagement && (
+                      <p className="text-xs text-gray-400 mt-1">{post.engagement.toLocaleString()} אינטראקציות</p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

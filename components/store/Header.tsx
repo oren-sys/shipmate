@@ -15,6 +15,10 @@ const NAV_LINKS = [
   { href: "/category/beauty", label: "יופי וטיפוח" },
   { href: "/category/kids", label: "ילדים" },
   { href: "/category/gadgets", label: "גאדג׳טים" },
+  { href: "/category/sports", label: "ספורט" },
+  { href: "/category/auto", label: "רכב" },
+  { href: "/category/jewelry", label: "תכשיטים" },
+  { href: "/category/toys", label: "צעצועים" },
 ];
 
 export default function Header() {

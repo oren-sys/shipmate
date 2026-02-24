@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface Customer {
   id: string;
@@ -22,28 +22,47 @@ const segmentConfig = {
   at_risk: { label: "בסיכון", bg: "bg-red-50", text: "text-red-700", icon: "⚠️" },
 };
 
-const demoCustomers: Customer[] = [
-  { id: "c1", name: "יעל כהן", email: "yael@example.com", phone: "050-1234567", ordersCount: 8, totalSpent: 2450, lastOrder: "2025-02-22", segment: "vip", createdAt: "2024-11-15" },
-  { id: "c2", name: "דניאל לוי", email: "daniel@example.com", phone: "052-9876543", ordersCount: 3, totalSpent: 890, lastOrder: "2025-02-22", segment: "returning", createdAt: "2025-01-03" },
-  { id: "c3", name: "נועה אברהם", email: "noa@example.com", phone: "054-5556667", ordersCount: 1, totalSpent: 89.9, lastOrder: "2025-02-22", segment: "new", createdAt: "2025-02-22" },
-  { id: "c4", name: "אורי שמעון", email: "ori@example.com", phone: "050-1112233", ordersCount: 5, totalSpent: 1280, lastOrder: "2025-02-21", segment: "returning", createdAt: "2024-12-20" },
-  { id: "c5", name: "מיכל דוד", email: "michal@example.com", phone: "053-4445566", ordersCount: 2, totalSpent: 320, lastOrder: "2025-02-21", segment: "returning", createdAt: "2025-01-15" },
-  { id: "c6", name: "רועי פרץ", email: "roi@example.com", phone: "058-7778899", ordersCount: 1, totalSpent: 69.9, lastOrder: "2025-01-10", segment: "at_risk", createdAt: "2025-01-10" },
-  { id: "c7", name: "שרה גולד", email: "sara@example.com", phone: "050-3334455", ordersCount: 12, totalSpent: 4100, lastOrder: "2025-02-20", segment: "vip", createdAt: "2024-09-01" },
-  { id: "c8", name: "עמית ברק", email: "amit@example.com", phone: "052-6667788", ordersCount: 1, totalSpent: 119.9, lastOrder: "2025-02-19", segment: "new", createdAt: "2025-02-19" },
-];
-
 export default function CustomersPage() {
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [segmentFilter, setSegmentFilter] = useState("all");
 
-  const filtered = demoCustomers.filter((c) => {
+  useEffect(() => {
+    async function fetchCustomers() {
+      try {
+        const res = await fetch("/api/admin/customers");
+        if (res.ok) {
+          const data = await res.json();
+          setCustomers(data.customers || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch customers:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchCustomers();
+  }, []);
+
+  const filtered = customers.filter((c) => {
     if (segmentFilter !== "all" && c.segment !== segmentFilter) return false;
-    if (search && !c.name.includes(search) && !c.email.includes(search) && !c.phone.includes(search)) return false;
+    if (search && !c.name?.includes(search) && !c.email?.includes(search) && !c.phone?.includes(search)) return false;
     return true;
   });
 
-  const totalLTV = demoCustomers.reduce((sum, c) => sum + c.totalSpent, 0);
+  const totalLTV = customers.reduce((sum, c) => sum + (c.totalSpent || 0), 0);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]" dir="rtl">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-coral border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-sm text-gray-500">טוען לקוחות...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6" dir="rtl">
@@ -51,7 +70,7 @@ export default function CustomersPage() {
       <div>
         <h1 className="text-2xl font-bold text-charcoal">לקוחות</h1>
         <p className="text-sm text-gray-500 mt-1">
-          {demoCustomers.length} לקוחות | ערך כולל: ₪{totalLTV.toLocaleString()}
+          {customers.length} לקוחות | ערך כולל: ₪{totalLTV.toLocaleString()}
         </p>
       </div>
 
@@ -59,7 +78,7 @@ export default function CustomersPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {(["vip", "returning", "new", "at_risk"] as const).map((seg) => {
           const config = segmentConfig[seg];
-          const count = demoCustomers.filter((c) => c.segment === seg).length;
+          const count = customers.filter((c) => c.segment === seg).length;
           return (
             <button
               key={seg}
@@ -93,48 +112,60 @@ export default function CustomersPage() {
 
       {/* Table */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-gray-100">
-              <th className="text-right px-6 py-3 text-xs font-medium text-gray-400 uppercase">לקוח</th>
-              <th className="text-right px-4 py-3 text-xs font-medium text-gray-400 uppercase">סגמנט</th>
-              <th className="text-right px-4 py-3 text-xs font-medium text-gray-400 uppercase">הזמנות</th>
-              <th className="text-right px-4 py-3 text-xs font-medium text-gray-400 uppercase">ערך כולל</th>
-              <th className="text-right px-4 py-3 text-xs font-medium text-gray-400 uppercase">הזמנה אחרונה</th>
-              <th className="text-right px-4 py-3 text-xs font-medium text-gray-400 uppercase">פעולות</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((customer) => {
-              const segment = segmentConfig[customer.segment];
-              return (
-                <tr key={customer.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
-                  <td className="px-6 py-4">
-                    <div>
-                      <p className="font-medium text-charcoal">{customer.name}</p>
-                      <p className="text-xs text-gray-400">{customer.email}</p>
-                    </div>
-                  </td>
-                  <td className="px-4 py-4">
-                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${segment.bg} ${segment.text}`}>
-                      {segment.icon} {segment.label}
-                    </span>
-                  </td>
-                  <td className="px-4 py-4 text-charcoal">{customer.ordersCount}</td>
-                  <td className="px-4 py-4 font-medium text-charcoal">₪{customer.totalSpent.toLocaleString()}</td>
-                  <td className="px-4 py-4 text-gray-400 text-xs">
-                    {new Date(customer.lastOrder).toLocaleDateString("he-IL")}
-                  </td>
-                  <td className="px-4 py-4">
-                    <Link href={`/admin/customers/${customer.id}`} className="text-coral hover:text-coral-dark text-sm font-medium">
-                      פרופיל
-                    </Link>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        {filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 px-4">
+            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+              <svg className="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+            <p className="text-gray-500 font-medium">אין לקוחות עדיין</p>
+            <p className="text-sm text-gray-400 mt-1">לקוחות חדשים יופיעו כאן לאחר הזמנה ראשונה</p>
+          </div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100">
+                <th className="text-right px-6 py-3 text-xs font-medium text-gray-400 uppercase">לקוח</th>
+                <th className="text-right px-4 py-3 text-xs font-medium text-gray-400 uppercase">סגמנט</th>
+                <th className="text-right px-4 py-3 text-xs font-medium text-gray-400 uppercase">הזמנות</th>
+                <th className="text-right px-4 py-3 text-xs font-medium text-gray-400 uppercase">ערך כולל</th>
+                <th className="text-right px-4 py-3 text-xs font-medium text-gray-400 uppercase">הזמנה אחרונה</th>
+                <th className="text-right px-4 py-3 text-xs font-medium text-gray-400 uppercase">פעולות</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((customer) => {
+                const segment = segmentConfig[customer.segment];
+                return (
+                  <tr key={customer.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                    <td className="px-6 py-4">
+                      <div>
+                        <p className="font-medium text-charcoal">{customer.name}</p>
+                        <p className="text-xs text-gray-400">{customer.email}</p>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${segment.bg} ${segment.text}`}>
+                        {segment.icon} {segment.label}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 text-charcoal">{customer.ordersCount}</td>
+                    <td className="px-4 py-4 font-medium text-charcoal">₪{(customer.totalSpent || 0).toLocaleString()}</td>
+                    <td className="px-4 py-4 text-gray-400 text-xs">
+                      {customer.lastOrder ? new Date(customer.lastOrder).toLocaleDateString("he-IL") : "-"}
+                    </td>
+                    <td className="px-4 py-4">
+                      <Link href={`/admin/customers/${customer.id}`} className="text-coral hover:text-coral-dark text-sm font-medium">
+                        פרופיל
+                      </Link>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );

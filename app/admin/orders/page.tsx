@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface Order {
   id: string;
@@ -31,39 +31,58 @@ const paymentBadge = {
   refunded: { label: "הוחזר", class: "bg-gray-100 text-gray-600" },
 };
 
-const demoOrders: Order[] = [
-  { id: "o1", orderNumber: "SM-1047", customerName: "יעל כהן", customerEmail: "yael@example.com", total: 189.9, itemCount: 2, status: "pending", paymentStatus: "paid", createdAt: "2025-02-22T12:30:00Z" },
-  { id: "o2", orderNumber: "SM-1046", customerName: "דניאל לוי", customerEmail: "daniel@example.com", total: 349.9, itemCount: 1, status: "processing", paymentStatus: "paid", createdAt: "2025-02-22T11:15:00Z" },
-  { id: "o3", orderNumber: "SM-1045", customerName: "נועה אברהם", customerEmail: "noa@example.com", total: 89.9, itemCount: 3, status: "shipped", paymentStatus: "paid", createdAt: "2025-02-22T09:00:00Z", trackingNumber: "IL123456789" },
-  { id: "o4", orderNumber: "SM-1044", customerName: "אורי שמעון", customerEmail: "ori@example.com", total: 249.9, itemCount: 1, status: "delivered", paymentStatus: "paid", createdAt: "2025-02-21T18:00:00Z", trackingNumber: "IL987654321" },
-  { id: "o5", orderNumber: "SM-1043", customerName: "מיכל דוד", customerEmail: "michal@example.com", total: 159.9, itemCount: 4, status: "delivered", paymentStatus: "paid", createdAt: "2025-02-21T15:00:00Z" },
-  { id: "o6", orderNumber: "SM-1042", customerName: "רועי פרץ", customerEmail: "roi@example.com", total: 69.9, itemCount: 1, status: "cancelled", paymentStatus: "refunded", createdAt: "2025-02-20T10:00:00Z" },
-  { id: "o7", orderNumber: "SM-1041", customerName: "שרה גולד", customerEmail: "sara@example.com", total: 429.9, itemCount: 3, status: "shipped", paymentStatus: "paid", createdAt: "2025-02-20T08:00:00Z", trackingNumber: "IL111222333" },
-  { id: "o8", orderNumber: "SM-1040", customerName: "עמית ברק", customerEmail: "amit@example.com", total: 119.9, itemCount: 2, status: "processing", paymentStatus: "paid", createdAt: "2025-02-19T20:00:00Z" },
-];
-
 export default function OrdersPage() {
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
 
-  const filtered = demoOrders.filter((o) => {
+  useEffect(() => {
+    async function fetchOrders() {
+      try {
+        const res = await fetch("/api/admin/orders");
+        if (res.ok) {
+          const data = await res.json();
+          setOrders(data.orders || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch orders:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchOrders();
+  }, []);
+
+  const filtered = orders.filter((o) => {
     if (statusFilter !== "all" && o.status !== statusFilter) return false;
-    if (search && !o.orderNumber.includes(search) && !o.customerName.includes(search)) return false;
+    if (search && !o.orderNumber?.includes(search) && !o.customerName?.includes(search)) return false;
     return true;
   });
 
   const counts = {
-    pending: demoOrders.filter((o) => o.status === "pending").length,
-    processing: demoOrders.filter((o) => o.status === "processing").length,
-    shipped: demoOrders.filter((o) => o.status === "shipped").length,
+    pending: orders.filter((o) => o.status === "pending").length,
+    processing: orders.filter((o) => o.status === "processing").length,
+    shipped: orders.filter((o) => o.status === "shipped").length,
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]" dir="rtl">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-coral border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-sm text-gray-500">טוען הזמנות...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6" dir="rtl">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-charcoal">הזמנות</h1>
-        <p className="text-sm text-gray-500 mt-1">{demoOrders.length} הזמנות</p>
+        <p className="text-sm text-gray-500 mt-1">{orders.length} הזמנות</p>
       </div>
 
       {/* Quick stats */}
@@ -107,60 +126,72 @@ export default function OrdersPage() {
 
       {/* Table */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-gray-100">
-              <th className="text-right px-6 py-3 text-xs font-medium text-gray-400 uppercase">הזמנה</th>
-              <th className="text-right px-4 py-3 text-xs font-medium text-gray-400 uppercase">לקוח</th>
-              <th className="text-right px-4 py-3 text-xs font-medium text-gray-400 uppercase">סטטוס</th>
-              <th className="text-right px-4 py-3 text-xs font-medium text-gray-400 uppercase">תשלום</th>
-              <th className="text-right px-4 py-3 text-xs font-medium text-gray-400 uppercase">פריטים</th>
-              <th className="text-right px-4 py-3 text-xs font-medium text-gray-400 uppercase">סה&quot;כ</th>
-              <th className="text-right px-4 py-3 text-xs font-medium text-gray-400 uppercase">תאריך</th>
-              <th className="text-right px-4 py-3 text-xs font-medium text-gray-400 uppercase">פעולות</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((order) => {
-              const status = statusConfig[order.status];
-              const payment = paymentBadge[order.paymentStatus];
-              const date = new Date(order.createdAt);
+        {filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 px-4">
+            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+              <svg className="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              </svg>
+            </div>
+            <p className="text-gray-500 font-medium">אין הזמנות עדיין</p>
+            <p className="text-sm text-gray-400 mt-1">הזמנות חדשות יופיעו כאן</p>
+          </div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100">
+                <th className="text-right px-6 py-3 text-xs font-medium text-gray-400 uppercase">הזמנה</th>
+                <th className="text-right px-4 py-3 text-xs font-medium text-gray-400 uppercase">לקוח</th>
+                <th className="text-right px-4 py-3 text-xs font-medium text-gray-400 uppercase">סטטוס</th>
+                <th className="text-right px-4 py-3 text-xs font-medium text-gray-400 uppercase">תשלום</th>
+                <th className="text-right px-4 py-3 text-xs font-medium text-gray-400 uppercase">פריטים</th>
+                <th className="text-right px-4 py-3 text-xs font-medium text-gray-400 uppercase">סה&quot;כ</th>
+                <th className="text-right px-4 py-3 text-xs font-medium text-gray-400 uppercase">תאריך</th>
+                <th className="text-right px-4 py-3 text-xs font-medium text-gray-400 uppercase">פעולות</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((order) => {
+                const status = statusConfig[order.status];
+                const payment = paymentBadge[order.paymentStatus];
+                const date = new Date(order.createdAt);
 
-              return (
-                <tr key={order.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
-                  <td className="px-6 py-4">
-                    <span className="font-mono font-medium text-charcoal">{order.orderNumber}</span>
-                  </td>
-                  <td className="px-4 py-4">
-                    <p className="text-charcoal">{order.customerName}</p>
-                    <p className="text-xs text-gray-400">{order.customerEmail}</p>
-                  </td>
-                  <td className="px-4 py-4">
-                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${status.bg} ${status.text}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
-                      {status.label}
-                    </span>
-                  </td>
-                  <td className="px-4 py-4">
-                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${payment.class}`}>
-                      {payment.label}
-                    </span>
-                  </td>
-                  <td className="px-4 py-4 text-gray-500">{order.itemCount}</td>
-                  <td className="px-4 py-4 font-medium text-charcoal">₪{order.total.toFixed(0)}</td>
-                  <td className="px-4 py-4 text-gray-400 text-xs">
-                    {date.toLocaleDateString("he-IL")}
-                  </td>
-                  <td className="px-4 py-4">
-                    <Link href={`/admin/orders/${order.id}`} className="text-coral hover:text-coral-dark text-sm font-medium">
-                      צפייה
-                    </Link>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                return (
+                  <tr key={order.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                    <td className="px-6 py-4">
+                      <span className="font-mono font-medium text-charcoal">{order.orderNumber}</span>
+                    </td>
+                    <td className="px-4 py-4">
+                      <p className="text-charcoal">{order.customerName}</p>
+                      <p className="text-xs text-gray-400">{order.customerEmail}</p>
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${status.bg} ${status.text}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
+                        {status.label}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${payment.class}`}>
+                        {payment.label}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 text-gray-500">{order.itemCount}</td>
+                    <td className="px-4 py-4 font-medium text-charcoal">₪{order.total?.toFixed(0)}</td>
+                    <td className="px-4 py-4 text-gray-400 text-xs">
+                      {date.toLocaleDateString("he-IL")}
+                    </td>
+                    <td className="px-4 py-4">
+                      <Link href={`/admin/orders/${order.id}`} className="text-coral hover:text-coral-dark text-sm font-medium">
+                        צפייה
+                      </Link>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );

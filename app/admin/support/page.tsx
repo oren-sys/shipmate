@@ -44,73 +44,14 @@ const priorityConfig = {
   high: { label: "גבוהה", color: "text-red-600 font-bold" },
 };
 
-// Demo data
-const demoTickets: Ticket[] = [
-  {
-    id: "T001",
-    phone: "+972501234567",
-    channel: "whatsapp",
-    subject: "ההזמנה לא הגיעה כבר שבועיים",
-    status: "open",
-    priority: "high",
-    messagesCount: 4,
-    createdAt: "2024-02-20T10:30:00Z",
-    updatedAt: "2024-02-21T14:20:00Z",
-  },
-  {
-    id: "T002",
-    email: "sarah@example.com",
-    channel: "email",
-    subject: "בקשת החזרה - מוצר לא תואם",
-    status: "pending",
-    priority: "medium",
-    messagesCount: 2,
-    createdAt: "2024-02-19T08:15:00Z",
-    updatedAt: "2024-02-20T11:00:00Z",
-  },
-  {
-    id: "T003",
-    phone: "+972509876543",
-    channel: "whatsapp",
-    subject: "שאלה על זמני משלוח",
-    status: "resolved",
-    priority: "low",
-    messagesCount: 3,
-    createdAt: "2024-02-18T16:45:00Z",
-    updatedAt: "2024-02-18T17:30:00Z",
-  },
-  {
-    id: "T004",
-    channel: "web",
-    email: "david@example.com",
-    subject: "בעיה בתשלום",
-    status: "open",
-    priority: "high",
-    messagesCount: 1,
-    createdAt: "2024-02-21T09:00:00Z",
-    updatedAt: "2024-02-21T09:00:00Z",
-  },
-  {
-    id: "T005",
-    phone: "+972507654321",
-    channel: "whatsapp",
-    subject: "רוצה לשנות כתובת למשלוח",
-    status: "pending",
-    priority: "medium",
-    messagesCount: 2,
-    createdAt: "2024-02-20T14:00:00Z",
-    updatedAt: "2024-02-21T10:00:00Z",
-  },
-];
-
 export default function SupportPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [filter, setFilter] = useState<"all" | "open" | "pending" | "resolved">("all");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Load from API, fallback to demo
-    setTickets(demoTickets);
+    // No API route for support tickets yet — start with empty state
+    setTickets([]);
     setLoading(false);
   }, []);
 
@@ -238,8 +179,14 @@ export default function SupportPage() {
             ))}
 
             {filteredTickets.length === 0 && (
-              <div className="p-12 text-center text-gray-500">
-                אין פניות בקטגוריה זו
+              <div className="flex flex-col items-center justify-center py-16 px-4">
+                <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                  <svg className="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                  </svg>
+                </div>
+                <p className="text-gray-500 font-medium">אין פניות תמיכה עדיין</p>
+                <p className="text-sm text-gray-400 mt-1">פניות חדשות מלקוחות יופיעו כאן</p>
               </div>
             )}
           </div>

@@ -3,13 +3,15 @@
 ## Deployment
 - **Always deploy from project root** (`C:\Users\Oren\Projects\Dropship GCP`)
 - **No WSL/bash on this machine** — use cmd commands directly, not .sh scripts
+- **GitHub trigger auto-deploys on push to master** — no `gcloud builds submit` needed!
 - **Deploy command** (one-liner for cmd):
   ```cmd
-  git add -A && git commit -m "your message" && git push origin master && gcloud builds submit --config=cloudbuild.yaml --region=me-west1 --project=dropship-488214 .
+  git add -A && git commit -m "your message" && git push origin master
   ```
+- If no code changes but need to trigger deploy: `git commit --allow-empty -m "trigger deploy" && git push origin master`
 - GCP account: `oren@skil.media`
-- `gcloud auth login` has issues (possibly Firefox default browser). Use `gcloud auth login --no-launch-browser` instead — it gives a URL to copy-paste.
-- GCP auth tokens expire periodically. When deploy fails with "Reauthentication failed", re-run `gcloud auth login --no-launch-browser`.
+- `gcloud auth login` has persistent issues from Claude's non-interactive terminal. For Firestore scripts, use `gcloud auth application-default login` from user's own terminal.
+- Cloud Build trigger name: `deploy-on-push` (region: me-west1)
 
 ## Project
 - Next.js 14 + TypeScript + Firestore + Cloud Run
