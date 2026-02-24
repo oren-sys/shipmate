@@ -64,6 +64,19 @@ function extractProductId(url: string): string | null {
   return null;
 }
 
+// Shorten Hebrew titles by removing filler words and capping length
+function shortenHebrewTitle(title: string): string {
+  const fillerWords = ["עם", "של", "בעל", "כולל", "מסוג", "איכותי", "מקצועי", "חדש", "מתאים ל"];
+  let words = title.split(/\s+/);
+  if (words.length > 8) {
+    words = words.filter((w) => !fillerWords.includes(w));
+  }
+  if (words.length > 8) {
+    words = words.slice(0, 8);
+  }
+  return words.join(" ");
+}
+
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session) {
@@ -106,18 +119,27 @@ export async function POST(req: NextRequest) {
           let titleHe = "";
           if (autoTranslate && productData.titleEn) {
             titleHe = await translateToHebrew(productData.titleEn);
+            titleHe = shortenHebrewTitle(titleHe);
+          }
+
+          let descriptionHe = "";
+          if (autoTranslate && productData.descriptionEn) {
+            const plainDesc = productData.descriptionEn.replace(/<[^>]*>/g, "").substring(0, 2000);
+            descriptionHe = await translateToHebrew(plainDesc);
           }
 
           products.push({
             titleEn: productData.titleEn,
             titleHe,
             descriptionEn: productData.descriptionEn,
+            descriptionHe,
             costPrice: productData.costPrice,
             price,
             compareAtPrice: compareAt,
             images: productData.images,
             aliexpressUrl: url,
             aliexpressId: productId,
+            shippingDays: productData.shippingDays || 21,
             category: "",
             status: "draft",
           });
@@ -208,11 +230,28 @@ async function fetchAliExpressProduct(productId: string, accessToken?: string | 
       costPrice = parseFloat(skuList[0].offer_sale_price || skuList[0].sku_price || "10");
     }
 
+    // Extract shipping days with 15% buffer
+    let shippingDays = 21;
+    if (product.ae_item_properties?.logistics_info_dto) {
+      const logistics = product.ae_item_properties.logistics_info_dto;
+      if (logistics.delivery_time) {
+        shippingDays = Math.ceil(parseInt(logistics.delivery_time) * 1.15);
+      }
+    } else if (product.logistics_info_dto?.logistics_info_list) {
+      const ilShipping = product.logistics_info_dto.logistics_info_list.find(
+        (l: { ship_to_country: string }) => l.ship_to_country === "IL"
+      );
+      if (ilShipping?.estimated_delivery_time) {
+        shippingDays = Math.ceil(parseInt(ilShipping.estimated_delivery_time) * 1.15);
+      }
+    }
+
     return {
       titleEn: product.ae_item_base_info_dto?.subject || "AliExpress Product",
       descriptionEn: product.ae_item_base_info_dto?.detail || product.ae_item_base_info_dto?.subject || "",
       costPrice,
       images,
+      shippingDays,
     };
   } catch (error) {
     console.error("[AliExpress Import] Error:", error);
@@ -275,5 +314,6 @@ function getFallbackProduct(productId: string) {
     descriptionEn: "Product imported from AliExpress. Edit description in Hebrew.",
     costPrice: 8 + Math.random() * 20,
     images: [],
+    shippingDays: 21,
   };
 }
