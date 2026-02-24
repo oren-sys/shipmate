@@ -1,0 +1,8 @@
+[   93484ms] [WARNING] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width. @ https://shipmate.store/_next/static/chunks/813.b4c17a5e703c2a2a.js:0
+[  154788ms] [WARNING] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width. @ https://shipmate.store/_next/static/chunks/813.b4c17a5e703c2a2a.js:0
