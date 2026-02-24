@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
 }
 
 /**
- * PUT /api/admin/coupons — Update coupon status
+ * PUT /api/admin/coupons — Update coupon (full update)
  */
 export async function PUT(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -98,14 +98,20 @@ export async function PUT(req: NextRequest) {
   }
 
   try {
-    const { id, status } = await req.json();
+    const { id, ...updates } = await req.json();
 
-    if (!id || !status) {
-      return NextResponse.json({ error: "Missing id or status" }, { status: 400 });
+    if (!id) {
+      return NextResponse.json({ error: "Missing coupon id" }, { status: 400 });
+    }
+
+    const existing = await db.collection("coupons").doc(id).get();
+    if (!existing.exists) {
+      return NextResponse.json({ error: "Coupon not found" }, { status: 404 });
     }
 
     await db.collection("coupons").doc(id).update({
-      status,
+      ...updates,
+      ...(updates.code && { code: updates.code.toUpperCase() }),
       updatedAt: new Date().toISOString(),
     });
 
@@ -113,5 +119,29 @@ export async function PUT(req: NextRequest) {
   } catch (error) {
     console.error("Coupon update error:", error);
     return NextResponse.json({ error: "Failed to update coupon" }, { status: 500 });
+  }
+}
+
+/**
+ * DELETE /api/admin/coupons — Delete a coupon
+ */
+export async function DELETE(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const { id } = await req.json();
+
+    if (!id) {
+      return NextResponse.json({ error: "Missing coupon id" }, { status: 400 });
+    }
+
+    await db.collection("coupons").doc(id).delete();
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Coupon delete error:", error);
+    return NextResponse.json({ error: "Failed to delete coupon" }, { status: 500 });
   }
 }

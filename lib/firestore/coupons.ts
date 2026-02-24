@@ -69,3 +69,15 @@ export async function listCoupons(): Promise<Coupon[]> {
     .get();
   return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Coupon));
 }
+
+export async function updateCoupon(id: string, data: Partial<Omit<Coupon, "id" | "createdAt">>): Promise<void> {
+  await getDb().collection(COLLECTION).doc(id).update({
+    ...data,
+    ...(data.code && { code: data.code.toUpperCase() }),
+    updatedAt: Timestamp.now(),
+  });
+}
+
+export async function deleteCoupon(id: string): Promise<void> {
+  await getDb().collection(COLLECTION).doc(id).delete();
+}
